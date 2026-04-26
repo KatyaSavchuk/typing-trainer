@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+<section class="lessons-page">
+  <div class="bg" data-bg="{% static 'img/lesson1.png' %}"></div>
+  <div class="overlay"></div>
+
+  <div class="wrap">
+
+    <!-- GAME HUD -->
+    <div class="hud">
+      <div class="hud-left">
+        <div class="hud-title">Прогрес</div>
+
+        <div class="hud-bar">
+          <div class="hud-fill" style="--p: {{ progress_percent|default:0 }};"></div>
+        </div>
+
+        <div class="hud-meta">
+          <span class="hud-big">{{ progress_percent|default:0 }}%</span>
+          <span class="hud-small">{{ completed_count|default:0 }}/{{ total_lessons|default:0 }} уроків</span>
+        </div>
+      </div>
+
+      <div class="hud-right">
+        <div class="hud-title">Останній урок</div>
+
+        {% if last_lesson %}
+          <div class="hud-lesson">{{ last_lesson.title|default:"Урок" }}</div>
+          <a class="hud-btn" href="{% url 'lesson_start' last_lesson.id %}">▶ Продовжити</a>
+        {% else %}
+          <div class="hud-lesson hud-lesson--muted">Ще немає прогресу</div>
+          {% if lessons %}
+            <a class="hud-btn" href="{% url 'lesson_start' lessons.0.id %}">▶ Почати</a>
+          {% else %}
+            <div class="hud-lesson hud-lesson--muted">Уроків поки немає</div>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- HEADER -->
+    <div class="head">
+      <h1 class="h1">Уроки</h1>
+      {% if request.user.is_staff %}
+        <a class="admin-btn" href="/admin/">+ Додати урок</a>
+      {% endif %}
+    </div>
+
+    <!-- GRID -->
+    <div class="grid">
+      {% for lesson in lessons %}
+        <a class="card" href="{% url 'lesson_start' lesson.id %}">
+          <div class="card-top">
+            <div class="card-title">{{ lesson.title }}</div>
+            {% if lesson.level %}
+              <div class="chip">Рівень {{ lesson.level }}</div>
+            {% endif %}
+          </div>
+
+          <div class="card-desc">
+            {% if lesson.description %}
+              {{ lesson.description|truncatechars:96 }}
+            {% else %}
+              Натисни, щоб відкрити урок та почати вправу.
+            {% endif %}
+          </div>
+
+          <div class="card-foot">
+            <span class="chip chip--soft">⏱ {{ lesson.duration_sec|default:60 }} сек</span>
+            <span class="chip chip--soft">⌨️ практика</span>
+          </div>
+        </a>
+      {% empty %}
+        <div class="empty">
+          Уроків поки немає. Додай їх в адмінці.
+        </div>
+      {% endfor %}
+    </div>
+
+  </div>
+</section>
+
+<style>
+  main { padding: 0 !important; }
+
+  .lessons-page{
+    position: relative;
+    min-height: calc(100vh - 56px);
+    overflow: hidden;
+  }
+
+  .bg{
+    position:absolute; inset:0;
+    background-size: cover;
+    background-position: center;
+    background-repeat:no-repeat;
+    transform: scale(1.03);
+    z-index: 0;
+  }
+
+  .overlay{
+    position:absolute; inset:0;
+    background:
+      radial-gradient(900px 600px at 25% 18%, rgba(110, 50, 255, 0.28), transparent 60%),
+      radial-gradient(900px 600px at 75% 28%, rgba(0, 220, 255, 0.18), transparent 55%),
+      linear-gradient(180deg, rgba(10, 8, 25, 0.70) 0%, rgba(10, 8, 25, 0.46) 45%, rgba(10, 8, 25, 0.22) 100%);
+    pointer-events:none;
+    z-index: 1;
+  }
+
+  .wrap{
+    position:relative;
+    z-index:2;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 22px 18px 44px;
+    color:#fff;
+  }
+
+  /* HUD */
+  .hud{
+    display:grid;
+    grid-template-columns: 1.1fr .9fr;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .hud-left, .hud-right{
+    border-radius: 18px;
+    padding: 16px;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.16);
+    box-shadow: 0 18px 46px rgba(0,0,0,0.28);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .hud-title{
+    font-weight: 950;
+    letter-spacing: .2px;
+    opacity: .95;
+    margin-bottom: 10px;
+    font-size: 14px;
+    text-transform: uppercase;
+  }
+
+  .hud-bar{
+    height: 14px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.14);
+    border: 1px solid rgba(255,255,255,0.14);
+    overflow:hidden;
+  }
+  .hud-fill{
+    height:100%;
+    width: calc(var(--p, 0) * 1%);
+    border-radius: 999px;
+    background: linear-gradient(90deg, #27d36b 0%, #42ffb6 100%);
+    box-shadow: 0 10px 22px rgba(39,211,107,.28);
+  }
+
+  .hud-meta{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin-top: 10px;
+    gap: 12px;
+  }
+  .hud-big{ font-size: 22px; font-weight: 950; }
+  .hud-small{ font-size: 13px; font-weight: 800; opacity:.85; }
+
+  .hud-lesson{
+    font-weight: 950;
+    font-size: 18px;
+    line-height: 1.2;
+    margin-bottom: 12px;
+  }
+  .hud-lesson--muted{ opacity:.85; font-weight: 900; }
+
+  .hud-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding: 12px 16px;
+    border-radius: 14px;
+    background: #27d36b;
+    color: #0b1b10;
+    text-decoration:none;
+    font-weight: 950;
+    border: 1px solid rgba(255,255,255,0.22);
+    box-shadow: 0 12px 26px rgba(39, 211, 107, 0.35);
+    transition: transform .12s ease, filter .12s ease;
+  }
+  .hud-btn:hover{ transform: translateY(-1px); filter: brightness(1.03); }
+
+  /* HEAD */
+  .head{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap: 14px;
+    margin: 8px 0 12px;
+  }
+  .h1{
+    margin:0;
+    font-size: 32px;
+    font-weight: 950;
+    letter-spacing: .2px;
+  }
+
+  .admin-btn{
+    display:inline-flex;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.12);
+    color:#fff;
+    text-decoration:none;
+    font-weight: 900;
+    border: 1px solid rgba(255,255,255,0.18);
+    backdrop-filter: blur(10px);
+    transition: transform .12s ease, background .12s ease;
+  }
+  .admin-btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,0.16); }
+
+  /* GRID */
+  .grid{
+    display:grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .card{
+    display:block;
+    text-decoration:none;
+    color:#fff;
+    border-radius: 18px;
+    padding: 14px;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.16);
+    box-shadow: 0 18px 46px rgba(0,0,0,0.22);
+    backdrop-filter: blur(10px);
+    transition: transform .12s ease, background .12s ease, border-color .12s ease;
+    min-height: 150px;
+  }
+  .card:hover{
+    transform: translateY(-2px);
+    background: rgba(255,255,255,0.13);
+    border-color: rgba(255,255,255,0.24);
+  }
+
+  .card-top{
+    display:flex;
+    justify-content:space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .card-title{
+    font-weight: 950;
+    font-size: 16px;
+    line-height: 1.2;
+  }
+
+  .card-desc{
+    font-size: 13px;
+    line-height: 1.35;
+    opacity: .9;
+    margin-bottom: 12px;
+    font-weight: 700;
+  }
+
+  .card-foot{
+    display:flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .chip{
+    font-size: 12px;
+    font-weight: 950;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(0,0,0,0.20);
+    border: 1px solid rgba(255,255,255,0.16);
+    white-space: nowrap;
+    opacity: .95;
+  }
+  .chip--soft{
+    background: rgba(255,255,255,0.10);
+  }
+
+  .empty{
+    grid-column: 1 / -1;
+    padding: 16px;
+    border-radius: 18px;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.16);
+    backdrop-filter: blur(10px);
+    font-weight: 800;
+    opacity: .92;
+  }
+
+  @media (max-width: 1100px){
+    .grid{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .hud{ grid-template-columns: 1fr; }
+  }
+  @media (max-width: 760px){
+    .grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .h1{ font-size: 28px; }
+  }
+  @media (max-width: 480px){
+    .grid{ grid-template-columns: 1fr; }
+  }
+</style>
+
+<script>
+  (function () {
+    const bg = document.querySelector(".bg");
+    if (!bg) return;
+    const url = bg.getAttribute("data-bg");
+    if (url) bg.style.backgroundImage = `url('${url}')`;
+  })();
+</script>
+
+{% endblock %}

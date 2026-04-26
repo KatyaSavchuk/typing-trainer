@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+<section class="reg-page">
+  <div class="reg-bg"></div>
+  <div class="reg-overlay"></div>
+
+  <div class="reg-wrap">
+    <div class="reg-card">
+      <h1 class="reg-title">Вхід</h1>
+
+      <form method="post" class="reg-form" novalidate>
+        {% csrf_token %}
+
+        <div class="field">
+          <label class="field-label" for="{{ form.username.id_for_label }}">Ім’я користувача</label>
+          {{ form.username }}
+          {% if form.username.errors %}
+            <div class="field-error">{{ form.username.errors|striptags }}</div>
+          {% endif %}
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="{{ form.password.id_for_label }}">Пароль</label>
+          {{ form.password }}
+          {% if form.password.errors %}
+            <div class="field-error">{{ form.password.errors|striptags }}</div>
+          {% endif %}
+        </div>
+
+        {% if form.non_field_errors %}
+          <div class="form-error">{{ form.non_field_errors|striptags }}</div>
+        {% endif %}
+
+        <button class="reg-btn" type="submit">Увійти</button>
+
+        <div class="reg-foot">
+          Немає акаунта?
+          <a href="{% url 'register' %}">Зареєструватися</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- стиль такий самий як у register -->
+<style>
+  .reg-page{
+    position: relative;
+    min-height: calc(100vh - 56px);
+    overflow: hidden;
+  }
+
+  .reg-bg{
+    position:absolute;
+    inset:0;
+    background-image: url("{% static 'img/profile.png' %}");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    transform: scale(1.03);
+    filter: saturate(1.05);
+  }
+
+  .reg-overlay{
+    position:absolute;
+    inset:0;
+    background:
+      radial-gradient(900px 600px at 25% 20%, rgba(110, 50, 255, 0.22), transparent 60%),
+      radial-gradient(900px 600px at 75% 30%, rgba(0, 220, 255, 0.14), transparent 55%),
+      linear-gradient(180deg, rgba(10, 8, 25, 0.68) 0%, rgba(10, 8, 25, 0.42) 40%, rgba(10, 8, 25, 0.18) 100%);
+    pointer-events:none;
+  }
+
+  .reg-wrap{
+    position: relative;
+    z-index: 2;
+    min-height: calc(100vh - 56px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding: 28px 16px;
+  }
+
+  .reg-card{
+    width: min(520px, 92vw);
+    border-radius: 22px;
+    padding: 24px;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.18);
+    box-shadow: 0 18px 46px rgba(0,0,0,0.28);
+    backdrop-filter: blur(10px);
+    color: #fff;
+  }
+
+  .reg-title{
+    margin: 0 0 16px;
+    font-size: 38px;
+    font-weight: 900;
+  }
+
+  .field{ margin-bottom: 14px; }
+  .field-label{
+    display:block;
+    font-weight: 900;
+    margin: 0 0 8px;
+    opacity: .95;
+  }
+
+  .reg-input{
+    width: 100% !important;
+    display: block !important;
+    padding: 12px 14px !important;
+    border-radius: 14px !important;
+    border: 1px solid rgba(255,255,255,0.18) !important;
+    background: rgba(255,255,255,0.92) !important;
+    color: #0b1020 !important;
+    outline: none !important;
+    font-weight: 700 !important;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.18) !important;
+  }
+
+  .reg-input:focus{
+    border-color: rgba(39,211,107,0.65) !important;
+    box-shadow: 0 14px 30px rgba(39,211,107,0.20) !important;
+  }
+
+  .field-error, .form-error{
+    margin-top: 8px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(229,57,53,0.14);
+    border: 1px solid rgba(229,57,53,0.28);
+    font-weight: 800;
+  }
+
+  .reg-btn{
+    width: 100%;
+    margin-top: 8px;
+    padding: 13px 16px;
+    border-radius: 14px;
+    background: #27d36b;
+    color: #0b1b10;
+    font-weight: 900;
+    border: 1px solid rgba(255,255,255,0.22);
+    box-shadow: 0 12px 26px rgba(39, 211, 107, 0.35);
+    cursor:pointer;
+    transition: transform .12s ease, filter .12s ease;
+  }
+  .reg-btn:hover{ transform: translateY(-1px); filter: brightness(1.03); }
+
+  .reg-foot{
+    margin-top: 12px;
+    opacity: .9;
+    font-weight: 800;
+    text-align: center;
+  }
+  .reg-foot a{
+    color: rgba(255,255,255,0.95);
+    text-decoration: underline;
+  }
+
+  @media (max-width: 760px){
+    .reg-title{ font-size: 30px; }
+    .reg-card{ padding: 20px; }
+  }
+</style>
+
+{% endblock %}

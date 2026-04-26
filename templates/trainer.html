@@ -1,0 +1,850 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+<section class="trainer-page">
+  <div class="trainer-overlay"></div>
+
+  <div class="trainer-wrap">
+    <div class="trainer-ui">
+
+      <div class="target-box">
+        <span id="targetText">{{ target_text }}</span>
+      </div>
+
+      <div class="input-area">
+        <input
+          id="typingInput"
+          type="text"
+          autocomplete="off"
+          placeholder="{% if learning_language == 'uk' %}Почни друкувати тут...{% else %}Start typing here...{% endif %}"
+        />
+
+        <div class="metrics">
+          <div>{% if learning_language == "uk" %}Час{% else %}Time{% endif %}: <b id="tTime">0</b></div>
+          <div>{% if learning_language == "uk" %}Швидкість{% else %}Speed{% endif %}: <b id="tWpm">0</b> WPM</div>
+          <div>{% if learning_language == "uk" %}Точність{% else %}Accuracy{% endif %}: <b id="tAcc">100</b>%</div>
+          <div>{% if learning_language == "uk" %}Помилки{% else %}Errors{% endif %}: <b id="tErr">0</b></div>
+        </div>
+
+        <div id="hint" class="hint"></div>
+      </div>
+
+      <div class="kb-scene">
+        <div class="hand-panel" id="handLeft">
+          {% include "partials/hand_left.svg" %}
+        </div>
+
+        <div class="keyboard-shell">
+          <div id="keyboard" class="keyboard"></div>
+        </div>
+
+        <div class="hand-panel" id="handRight">
+          {% include "partials/hand_right.svg" %}
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="btnRestart" type="button" class="btn btn-ghost">
+          {% if learning_language == "uk" %}Почати заново{% else %}Restart{% endif %}
+        </button>
+        <button id="btnSave" type="button" class="btn btn-green" disabled>
+          {% if learning_language == "uk" %}Зберегти результат{% else %}Save result{% endif %}
+        </button>
+      </div>
+
+      <div id="resultBox" class="result" style="display:none;"></div>
+
+    </div>
+  </div>
+</section>
+
+<style>
+  main { padding: 0 !important; }
+
+  html, body{
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  :root{
+    --c-pinky: 252,166,189;
+    --c-ring:  176,227,255;
+    --c-middle:255,219,180;
+    --c-index: 206,252,150;
+    --c-thumb: 223,194,255;
+
+    --glow: 0 0 0 3px rgba(39,211,107,0.90), 0 0 24px rgba(39,211,107,0.45);
+    --wrongGlow: 0 0 0 3px rgba(229,57,53,0.95), 0 0 24px rgba(229,57,53,0.45);
+  }
+
+  .trainer-page{
+    position: relative;
+    min-height: calc(100svh - var(--header-height, 78px));
+    background-image: url("{% static 'img/trainer1.png' %}");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    overflow-x: hidden;
+    overflow-y: visible;
+  }
+
+  .trainer-overlay{
+    position:absolute;
+    inset:0;
+    background:
+      radial-gradient(900px 520px at 22% 25%, rgba(90, 180, 255, 0.12), transparent 60%),
+      radial-gradient(900px 520px at 72% 35%, rgba(175, 90, 255, 0.14), transparent 55%),
+      linear-gradient(180deg, rgba(10, 8, 25, 0.50) 0%, rgba(10, 8, 25, 0.65) 70%, rgba(10, 8, 25, 0.72) 100%);
+    pointer-events:none;
+  }
+
+  .trainer-wrap{
+    position: relative;
+    z-index: 2;
+    width: min(1320px, calc(100% - 32px));
+    margin: 0 auto;
+    padding: 18px 0 28px;
+  }
+
+  .trainer-ui{
+    display: grid;
+    gap: 14px;
+  }
+
+  .target-box{
+    border-radius: 16px;
+    background: rgba(0,0,0,0.28);
+    border: 1px solid rgba(255,255,255,0.14);
+    padding: 16px 18px;
+    font-size: clamp(18px, 1.8vw, 24px);
+    color: rgba(255,255,255,0.95);
+    white-space: pre-wrap;
+    text-align: center;
+  }
+
+  .input-area{
+    display:grid;
+    gap: 10px;
+  }
+
+  #typingInput{
+    width:100%;
+    padding: 14px 16px;
+    font-size: clamp(16px, 1.4vw, 20px);
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.18);
+    background: rgba(255,255,255,0.94);
+    outline: none;
+    user-select:none;
+  }
+
+  #typingInput:focus{
+    box-shadow: 0 0 0 3px rgba(39,211,107,0.25);
+    border-color: rgba(39,211,107,0.35);
+  }
+
+  .metrics{
+    display:flex;
+    gap:16px;
+    flex-wrap:wrap;
+    color: rgba(255,255,255,0.92);
+    font-weight: 800;
+  }
+
+  .metrics b{
+    color:#fff;
+  }
+
+  .hint{
+    color: rgba(255,255,255,0.86);
+    font-weight: 800;
+    min-height: 22px;
+  }
+
+  .kb-scene{
+    margin-top: 4px;
+    display: grid;
+    grid-template-columns: 180px minmax(0, 1fr) 180px;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .hand-panel{
+    height: 190px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+  }
+
+  .hand-panel svg{
+    width: 145px;
+    height: 145px;
+  }
+
+  .finger-glow{
+    filter: drop-shadow(0 0 10px rgba(39,211,107,0.95))
+            drop-shadow(0 0 26px rgba(39,211,107,0.60));
+    transform-origin: center;
+    animation: fingerPulse .55s ease-in-out infinite alternate;
+  }
+
+  @keyframes fingerPulse{
+    from { transform: scale(1); }
+    to   { transform: scale(1.035); }
+  }
+
+  .keyboard-shell{
+    border-radius: 18px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.16);
+    padding: 12px;
+  }
+
+  .keyboard{
+    border-radius: 16px;
+    padding: 8px;
+  }
+
+  .kb-row{
+    display:flex;
+    gap: 10px;
+    margin: 10px 0;
+    justify-content:center;
+    flex-wrap: nowrap;
+  }
+
+  .key{
+    height: 46px;
+    border-radius: 12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size: 15px;
+    font-weight: 900;
+    user-select:none;
+    color: rgba(255,255,255,0.96);
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.16);
+    box-shadow: 0 10px 18px rgba(0,0,0,0.18);
+    transition: transform .06s ease, box-shadow .12s ease, background .12s ease, border-color .12s ease;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+  }
+
+  .w-1 { width: 52px; }
+  .w-125 { width: 72px; }
+  .w-150 { width: 86px; }
+  .w-175 { width: 104px; }
+  .w-200 { width: 124px; }
+  .w-225 { width: 144px; }
+  .w-600 { width: 420px; }
+
+  .f-L-pinky, .f-R-pinky { background: rgba(var(--c-pinky), .20); }
+  .f-L-ring,  .f-R-ring  { background: rgba(var(--c-ring),  .20); }
+  .f-L-middle,.f-R-middle{ background: rgba(var(--c-middle),.20); }
+  .f-L-index, .f-R-index { background: rgba(var(--c-index), .20); }
+  .f-thumb { background: rgba(var(--c-thumb), .20); }
+
+  .key.active{
+    box-shadow: var(--glow);
+    border-color: rgba(39,211,107,0.45);
+    transform: translateY(-1px);
+  }
+
+  .key.shift-needed{
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.40), 0 0 22px rgba(255,255,255,0.20);
+  }
+
+  .key.wrong{
+    box-shadow: var(--wrongGlow);
+    border-color: rgba(229,57,53,0.45);
+    transform: translateY(-1px);
+  }
+
+  .actions{
+    display:flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 2px;
+  }
+
+  .btn{
+    border: 0;
+    border-radius: 14px;
+    padding: 12px 16px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .btn-ghost{
+    background: rgba(255,255,255,0.88);
+  }
+
+  .btn-green{
+    background: #27d36b;
+    color: #0b1b10;
+    box-shadow: 0 12px 28px rgba(39, 211, 107, 0.30);
+  }
+
+  .btn:disabled{
+    opacity: .55;
+    cursor: not-allowed;
+  }
+
+  .result{
+    margin-top: 6px;
+    padding: 12px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.94);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: #0b1020;
+    font-weight: 800;
+  }
+
+  @media (max-width: 1060px){
+    .kb-scene{
+      grid-template-columns: 140px minmax(0, 1fr) 140px;
+    }
+
+    .hand-panel{
+      height: 150px;
+    }
+
+    .hand-panel svg{
+      width: 120px;
+      height: 120px;
+    }
+
+    .w-600{
+      width: 320px;
+    }
+  }
+
+  @media (max-width: 860px){
+    .trainer-wrap{
+      width: min(100% - 20px, 100%);
+      padding: 14px 0 22px;
+    }
+
+    .kb-scene{
+      grid-template-columns: 1fr;
+    }
+
+    .hand-panel{
+      display: none;
+    }
+
+    .kb-row{
+      flex-wrap: wrap;
+    }
+
+    .w-600{
+      width: 100%;
+      max-width: 420px;
+    }
+
+    .metrics{
+      gap: 10px;
+      font-size: 14px;
+    }
+  }
+</style>
+
+<script>
+  const LANG = "{{ learning_language|default:'uk' }}";
+
+  const KB = {
+    en: [
+      [
+        {label:"`", v:"`", w:"w-1",   z:"f-L-pinky",  finger:"L_pinky"},
+        {label:"1", v:"1", w:"w-1",   z:"f-L-pinky",  finger:"L_pinky"},
+        {label:"2", v:"2", w:"w-1",   z:"f-L-ring",   finger:"L_ring"},
+        {label:"3", v:"3", w:"w-1",   z:"f-L-middle", finger:"L_middle"},
+        {label:"4", v:"4", w:"w-1",   z:"f-L-index",  finger:"L_index"},
+        {label:"5", v:"5", w:"w-1",   z:"f-L-index",  finger:"L_index"},
+        {label:"6", v:"6", w:"w-1",   z:"f-R-index",  finger:"R_index"},
+        {label:"7", v:"7", w:"w-1",   z:"f-R-index",  finger:"R_index"},
+        {label:"8", v:"8", w:"w-1",   z:"f-R-middle", finger:"R_middle"},
+        {label:"9", v:"9", w:"w-1",   z:"f-R-ring",   finger:"R_ring"},
+        {label:"0", v:"0", w:"w-1",   z:"f-R-pinky",  finger:"R_pinky"},
+        {label:"-", v:"-", w:"w-1",   z:"f-R-pinky",  finger:"R_pinky"},
+        {label:"=", v:"=", w:"w-1",   z:"f-R-pinky",  finger:"R_pinky"},
+        {label:"Backspace", v:"Backspace", w:"w-225", z:"f-R-pinky", finger:"R_pinky"},
+      ],
+      [
+        {label:"Tab", v:"Tab", w:"w-150", z:"f-L-pinky", finger:"L_pinky"},
+        {label:"q", v:"q", w:"w-1", z:"f-L-pinky", finger:"L_pinky"},
+        {label:"w", v:"w", w:"w-1", z:"f-L-ring", finger:"L_ring"},
+        {label:"e", v:"e", w:"w-1", z:"f-L-middle", finger:"L_middle"},
+        {label:"r", v:"r", w:"w-1", z:"f-L-index", finger:"L_index"},
+        {label:"t", v:"t", w:"w-1", z:"f-L-index", finger:"L_index"},
+        {label:"y", v:"y", w:"w-1", z:"f-R-index", finger:"R_index"},
+        {label:"u", v:"u", w:"w-1", z:"f-R-index", finger:"R_index"},
+        {label:"i", v:"i", w:"w-1", z:"f-R-middle", finger:"R_middle"},
+        {label:"o", v:"o", w:"w-1", z:"f-R-ring", finger:"R_ring"},
+        {label:"p", v:"p", w:"w-1", z:"f-R-pinky", finger:"R_pinky"},
+        {label:"[", v:"[", w:"w-1", z:"f-R-pinky", finger:"R_pinky"},
+        {label:"]", v:"]", w:"w-1", z:"f-R-pinky", finger:"R_pinky"},
+        {label:"\\", v:"\\", w:"w-125", z:"f-R-pinky", finger:"R_pinky"},
+      ],
+      [
+        {label:"Caps", v:"CapsLock", w:"w-175", z:"f-L-pinky", finger:"L_pinky"},
+        {label:"a", v:"a", w:"w-1", z:"f-L-pinky", finger:"L_pinky"},
+        {label:"s", v:"s", w:"w-1", z:"f-L-ring", finger:"L_ring"},
+        {label:"d", v:"d", w:"w-1", z:"f-L-middle", finger:"L_middle"},
+        {label:"f", v:"f", w:"w-1", z:"f-L-index", finger:"L_index"},
+        {label:"g", v:"g", w:"w-1", z:"f-L-index", finger:"L_index"},
+        {label:"h", v:"h", w:"w-1", z:"f-R-index", finger:"R_index"},
+        {label:"j", v:"j", w:"w-1", z:"f-R-index", finger:"R_index"},
+        {label:"k", v:"k", w:"w-1", z:"f-R-middle", finger:"R_middle"},
+        {label:"l", v:"l", w:"w-1", z:"f-R-ring", finger:"R_ring"},
+        {label:";", v:";", w:"w-1", z:"f-R-pinky", finger:"R_pinky"},
+        {label:"'", v:"'", w:"w-1", z:"f-R-pinky", finger:"R_pinky"},
+        {label:"Enter", v:"Enter", w:"w-225", z:"f-R-pinky", finger:"R_pinky"},
+      ],
+      [
+        {label:"Shift", v:"ShiftLeft", w:"w-225", z:"f-L-pinky", finger:"L_pinky"},
+        {label:"z", v:"z", w:"w-1", z:"f-L-pinky", finger:"L_pinky"},
+        {label:"x", v:"x", w:"w-1", z:"f-L-ring", finger:"L_ring"},
+        {label:"c", v:"c", w:"w-1", z:"f-L-middle", finger:"L_middle"},
+        {label:"v", v:"v", w:"w-1", z:"f-L-index", finger:"L_index"},
+        {label:"b", v:"b", w:"w-1", z:"f-L-index", finger:"L_index"},
+        {label:"n", v:"n", w:"w-1", z:"f-R-index", finger:"R_index"},
+        {label:"m", v:"m", w:"w-1", z:"f-R-index", finger:"R_index"},
+        {label:",", v:",", w:"w-1", z:"f-R-middle", finger:"R_middle"},
+        {label:".", v:".", w:"w-1", z:"f-R-ring", finger:"R_ring"},
+        {label:"/", v:"/", w:"w-1", z:"f-R-pinky", finger:"R_pinky"},
+        {label:"Shift", v:"ShiftRight", w:"w-225", z:"f-R-pinky", finger:"R_pinky"},
+      ],
+      [
+        {label:"Ctrl", v:"ControlLeft", w:"w-175", z:"f-L-pinky", finger:"L_pinky"},
+        {label:"Alt",  v:"AltLeft", w:"w-175", z:"f-thumb", finger:"L_thumb"},
+        {label:"Space", v:" ", w:"w-600", z:"f-thumb", finger:"L_thumb"},
+        {label:"Alt",  v:"AltRight", w:"w-175", z:"f-thumb", finger:"R_thumb"},
+        {label:"Ctrl", v:"ControlRight", w:"w-175", z:"f-R-pinky", finger:"R_pinky"},
+      ]
+    ],
+
+    uk: [
+      [
+        {label:"`", v:"`", w:"w-1",   z:"f-L-pinky",  finger:"L_pinky"},
+        {label:"1", v:"1", w:"w-1",   z:"f-L-pinky",  finger:"L_pinky"},
+        {label:"2", v:"2", w:"w-1",   z:"f-L-ring",   finger:"L_ring"},
+        {label:"3", v:"3", w:"w-1",   z:"f-L-middle", finger:"L_middle"},
+        {label:"4", v:"4", w:"w-1",   z:"f-L-index",  finger:"L_index"},
+        {label:"5", v:"5", w:"w-1",   z:"f-L-index",  finger:"L_index"},
+        {label:"6", v:"6", w:"w-1",   z:"f-R-index",  finger:"R_index"},
+        {label:"7", v:"7", w:"w-1",   z:"f-R-index",  finger:"R_index"},
+        {label:"8", v:"8", w:"w-1",   z:"f-R-middle", finger:"R_middle"},
+        {label:"9", v:"9", w:"w-1",   z:"f-R-ring",   finger:"R_ring"},
+        {label:"0", v:"0", w:"w-1",   z:"f-R-pinky",  finger:"R_pinky"},
+        {label:"-", v:"-", w:"w-1",   z:"f-R-pinky",  finger:"R_pinky"},
+        {label:"=", v:"=", w:"w-1",   z:"f-R-pinky",  finger:"R_pinky"},
+        {label:"Backspace", v:"Backspace", w:"w-225", z:"f-R-pinky", finger:"R_pinky"},
+      ],
+      [
+        {label:"Tab", v:"Tab", w:"w-150", z:"f-L-pinky", finger:"L_pinky"},
+        {label:"й", v:"й", w:"w-1", z:"f-L-pinky", finger:"L_pinky"},
+        {label:"ц", v:"ц", w:"w-1", z:"f-L-ring", finger:"L_ring"},
+        {label:"у", v:"у", w:"w-1", z:"f-L-middle", finger:"L_middle"},
+        {label:"к", v:"к", w:"w-1", z:"f-L-index", finger:"L_index"},
+        {label:"е", v:"е", w:"w-1", z:"f-L-index", finger:"L_index"},
+        {label:"н", v:"н", w:"w-1", z:"f-R-index", finger:"R_index"},
+        {label:"г", v:"г", w:"w-1", z:"f-R-index", finger:"R_index"},
+        {label:"ш", v:"ш", w:"w-1", z:"f-R-middle", finger:"R_middle"},
+        {label:"щ", v:"щ", w:"w-1", z:"f-R-ring", finger:"R_ring"},
+        {label:"з", v:"з", w:"w-1", z:"f-R-pinky", finger:"R_pinky"},
+        {label:"х", v:"х", w:"w-1", z:"f-R-pinky", finger:"R_pinky"},
+        {label:"ї", v:"ї", w:"w-1", z:"f-R-pinky", finger:"R_pinky"},
+        {label:"\\", v:"\\", w:"w-125", z:"f-R-pinky", finger:"R_pinky"},
+      ],
+      [
+        {label:"Caps", v:"CapsLock", w:"w-175", z:"f-L-pinky", finger:"L_pinky"},
+        {label:"ф", v:"ф", w:"w-1", z:"f-L-pinky", finger:"L_pinky"},
+        {label:"і", v:"і", w:"w-1", z:"f-L-ring", finger:"L_ring"},
+        {label:"в", v:"в", w:"w-1", z:"f-L-middle", finger:"L_middle"},
+        {label:"а", v:"а", w:"w-1", z:"f-L-index", finger:"L_index"},
+        {label:"п", v:"п", w:"w-1", z:"f-L-index", finger:"L_index"},
+        {label:"р", v:"р", w:"w-1", z:"f-R-index", finger:"R_index"},
+        {label:"о", v:"о", w:"w-1", z:"f-R-index", finger:"R_index"},
+        {label:"л", v:"л", w:"w-1", z:"f-R-middle", finger:"R_middle"},
+        {label:"д", v:"д", w:"w-1", z:"f-R-ring", finger:"R_ring"},
+        {label:"ж", v:"ж", w:"w-1", z:"f-R-pinky", finger:"R_pinky"},
+        {label:"є", v:"є", w:"w-1", z:"f-R-pinky", finger:"R_pinky"},
+        {label:"Enter", v:"Enter", w:"w-225", z:"f-R-pinky", finger:"R_pinky"},
+      ],
+      [
+        {label:"Shift", v:"ShiftLeft", w:"w-225", z:"f-L-pinky", finger:"L_pinky"},
+        {label:"я", v:"я", w:"w-1", z:"f-L-pinky", finger:"L_pinky"},
+        {label:"ч", v:"ч", w:"w-1", z:"f-L-ring", finger:"L_ring"},
+        {label:"с", v:"с", w:"w-1", z:"f-L-middle", finger:"L_middle"},
+        {label:"м", v:"м", w:"w-1", z:"f-L-index", finger:"L_index"},
+        {label:"и", v:"и", w:"w-1", z:"f-L-index", finger:"L_index"},
+        {label:"т", v:"т", w:"w-1", z:"f-R-index", finger:"R_index"},
+        {label:"ь", v:"ь", w:"w-1", z:"f-R-index", finger:"R_index"},
+        {label:"б", v:"б", w:"w-1", z:"f-R-middle", finger:"R_middle"},
+        {label:"ю", v:"ю", w:"w-1", z:"f-R-ring", finger:"R_ring"},
+        {label:",", v:",", w:"w-1", z:"f-R-middle", finger:"R_middle"},
+        {label:".", v:".", w:"w-1", z:"f-R-ring", finger:"R_ring"},
+        {label:"Shift", v:"ShiftRight", w:"w-225", z:"f-R-pinky", finger:"R_pinky"},
+      ],
+      [
+        {label:"Ctrl", v:"ControlLeft", w:"w-175", z:"f-L-pinky", finger:"L_pinky"},
+        {label:"Alt",  v:"AltLeft", w:"w-175", z:"f-thumb", finger:"L_thumb"},
+        {label:"Space", v:" ", w:"w-600", z:"f-thumb", finger:"L_thumb"},
+        {label:"Alt",  v:"AltRight", w:"w-175", z:"f-thumb", finger:"R_thumb"},
+        {label:"Ctrl", v:"ControlRight", w:"w-175", z:"f-R-pinky", finger:"R_pinky"},
+      ]
+    ]
+  };
+
+  const SHIFT_MAP = {
+    "~":"`","!":"1","@":"2","#":"3","$":"4","%":"5","^":"6","&":"7","*":"8","(":"9",")":"0",
+    "_":"-","+":"=","{":"[","}":"]","|":"\\",":":";","\"":"'","<":",",">":".","?":"/"
+  };
+
+  const keyboard = document.getElementById("keyboard");
+  keyboard.innerHTML = "";
+
+  const layout = KB[LANG === "en" ? "en" : "uk"];
+
+  layout.forEach(row => {
+    const rowEl = document.createElement("div");
+    rowEl.className = "kb-row";
+    row.forEach(k => {
+      const el = document.createElement("div");
+      el.className = `key ${k.w} ${k.z}`;
+      el.dataset.v = k.v;
+      el.dataset.finger = k.finger;
+      el.textContent = k.label;
+      rowEl.appendChild(el);
+    });
+    keyboard.appendChild(rowEl);
+  });
+
+  const keys = Array.from(document.querySelectorAll(".key"));
+
+  function clearFingerGlow(){
+    ["L_pinky","L_ring","L_middle","L_index","L_thumb","R_pinky","R_ring","R_middle","R_index","R_thumb"]
+      .forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove("finger-glow");
+      });
+  }
+
+  function glowFinger(id){
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.add("finger-glow");
+  }
+
+  function isUpperLetter(ch){
+    return ch && ch.toLowerCase && ch !== ch.toLowerCase();
+  }
+
+  function normalizeExpected(ch){
+    if (ch === " ") return { base: " ", needsShift: false };
+
+    if (isUpperLetter(ch)) {
+      return { base: ch.toLowerCase(), needsShift: true };
+    }
+
+    if (SHIFT_MAP[ch]) {
+      return { base: SHIFT_MAP[ch], needsShift: true };
+    }
+
+    return { base: ch, needsShift: false };
+  }
+
+  function normalizeTyped(ch){
+    if (ch === " ") return { base: " ", needsShift: false };
+
+    if (isUpperLetter(ch)) {
+      return { base: ch.toLowerCase(), needsShift: true };
+    }
+
+    if (SHIFT_MAP[ch]) {
+      return { base: SHIFT_MAP[ch], needsShift: true };
+    }
+
+    return { base: ch, needsShift: false };
+  }
+
+  function clearKeyStates(){
+    keys.forEach(k => k.classList.remove("active","wrong","shift-needed"));
+  }
+
+  function findKeyByValue(v){
+    return keys.find(k => k.dataset.v === v);
+  }
+
+  function getShiftKeyForMainFinger(mainFingerId){
+    const isLeft = mainFingerId && mainFingerId.startsWith("L_");
+    return isLeft ? findKeyByValue("ShiftRight") : findKeyByValue("ShiftLeft");
+  }
+
+  function highlight(expectedChar){
+    clearKeyStates();
+    clearFingerGlow();
+
+    const { base, needsShift } = normalizeExpected(expectedChar);
+
+    const keyEl = findKeyByValue(base);
+    if (keyEl) {
+      keyEl.classList.add("active");
+      const finger = keyEl.dataset.finger;
+
+      if (base === " ") {
+        glowFinger("L_thumb");
+        glowFinger("R_thumb");
+      } else if (finger) {
+        glowFinger(finger);
+      }
+
+      if (needsShift) {
+        const shiftEl = getShiftKeyForMainFinger(finger);
+        if (shiftEl) {
+          shiftEl.classList.add("active","shift-needed");
+          glowFinger(shiftEl.dataset.finger || (shiftEl.dataset.v === "ShiftLeft" ? "L_pinky" : "R_pinky"));
+        }
+      }
+    }
+
+    document.getElementById("hint").textContent = "";
+  }
+
+  function flashWrong(expectedChar){
+    const { base, needsShift } = normalizeExpected(expectedChar);
+    clearKeyStates();
+    clearFingerGlow();
+
+    const keyEl = findKeyByValue(base);
+    if (keyEl) keyEl.classList.add("wrong");
+
+    if (needsShift){
+      const finger = keyEl?.dataset.finger || "L_index";
+      const shiftEl = getShiftKeyForMainFinger(finger);
+      if (shiftEl) shiftEl.classList.add("wrong");
+    }
+
+    setTimeout(() => highlight(expectedChar), 180);
+  }
+
+  const targetText = document.getElementById("targetText").textContent;
+  const input = document.getElementById("typingInput");
+
+  const tTime = document.getElementById("tTime");
+  const tWpm  = document.getElementById("tWpm");
+  const tAcc  = document.getElementById("tAcc");
+  const tErr  = document.getElementById("tErr");
+
+  const btnRestart = document.getElementById("btnRestart");
+  const btnSave = document.getElementById("btnSave");
+  const resultBox = document.getElementById("resultBox");
+
+  function moveCursorToEnd() {
+    const len = input.value.length;
+    input.setSelectionRange(len, len);
+  }
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Backspace" || e.key === "Delete") { e.preventDefault(); return; }
+    const blockedNav = ["ArrowLeft","ArrowRight","ArrowUp","ArrowDown","Home","End"];
+    if (blockedNav.includes(e.key)) { e.preventDefault(); return; }
+    if ((e.ctrlKey || e.metaKey) && ["v","x","a"].includes(e.key.toLowerCase())) { e.preventDefault(); return; }
+  });
+
+  input.addEventListener("paste", (e) => e.preventDefault());
+  input.addEventListener("cut", (e) => e.preventDefault());
+  input.addEventListener("click", moveCursorToEnd);
+  input.addEventListener("focus", moveCursorToEnd);
+  input.addEventListener("select", moveCursorToEnd);
+
+  let started = false;
+  let startTime = 0;
+  let timerId = null;
+
+  let progress = 0;
+  let totalKeystrokes = 0;
+  let errors = 0;
+
+  function secondsNow() { return Math.floor((Date.now() - startTime) / 1000); }
+
+  function recalcMetrics() {
+    const sec = Math.max(secondsNow(), 1);
+    const minutes = sec / 60;
+
+    const correctKeystrokes = Math.max(totalKeystrokes - errors, 0);
+    const accuracy = totalKeystrokes === 0 ? 100 : (correctKeystrokes / totalKeystrokes) * 100;
+
+    const cpm = progress / minutes;
+    const wpm = (progress / 5) / minutes;
+
+    tTime.innerText = sec;
+    tAcc.innerText = accuracy.toFixed(1);
+    tWpm.innerText = wpm.toFixed(1);
+    tErr.innerText = errors;
+
+    return { sec, accuracy, cpm, wpm };
+  }
+
+  function startTimerIfNeeded() {
+    if (started) return;
+    started = true;
+    startTime = Date.now();
+    timerId = setInterval(recalcMetrics, 250);
+  }
+
+  function finish() {
+    clearInterval(timerId);
+    const m = recalcMetrics();
+    resultBox.style.display = "block";
+
+    const labelRes  = (LANG === "uk") ? "Результат" : "Result";
+    const labelTime = (LANG === "uk") ? "Час" : "Time";
+    const labelSpeed= (LANG === "uk") ? "Швидкість" : "Speed";
+    const labelAcc  = (LANG === "uk") ? "Точність" : "Accuracy";
+    const labelErr  = (LANG === "uk") ? "Помилки" : "Errors";
+
+    resultBox.innerHTML = `
+      <b>${labelRes}:</b><br>
+      ${labelTime}: ${m.sec} s<br>
+      ${labelSpeed}: ${m.wpm.toFixed(1)} WPM<br>
+      ${labelAcc}: ${m.accuracy.toFixed(1)}%<br>
+      ${labelErr}: ${errors}<br>
+    `;
+
+    btnSave.disabled = false;
+  }
+
+  highlight(targetText[0] || " ");
+  input.focus();
+
+  input.addEventListener("input", () => {
+    startTimerIfNeeded();
+
+    let raw = input.value;
+    moveCursorToEnd();
+
+    if (raw.length <= progress) {
+      input.value = raw.slice(0, progress);
+      highlight(targetText[progress] || " ");
+      return;
+    }
+
+    const typedChar = raw[raw.length - 1];
+    const expectedChar = targetText[progress] || "";
+
+    totalKeystrokes += 1;
+
+    const tN = normalizeTyped(typedChar);
+    const eN = normalizeExpected(expectedChar);
+    const isCorrect = (tN.base === eN.base) && (tN.needsShift === eN.needsShift);
+
+    if (!isCorrect) {
+      errors += 1;
+      input.value = raw.slice(0, progress);
+      flashWrong(expectedChar);
+      recalcMetrics();
+      return;
+    }
+
+    progress += 1;
+    input.value = raw.slice(0, progress);
+
+    recalcMetrics();
+
+    if (progress >= targetText.length) {
+      finish();
+      return;
+    }
+
+    highlight(targetText[progress]);
+  });
+
+  btnRestart.addEventListener("click", () => {
+    clearInterval(timerId);
+    started = false;
+    startTime = 0;
+    timerId = null;
+
+    progress = 0;
+    totalKeystrokes = 0;
+    errors = 0;
+
+    input.value = "";
+    resultBox.style.display = "none";
+    resultBox.innerHTML = "";
+    btnSave.disabled = true;
+
+    tTime.innerText = "0";
+    tWpm.innerText = "0";
+    tAcc.innerText = "100";
+    tErr.innerText = "0";
+
+    clearKeyStates();
+    clearFingerGlow();
+    document.getElementById("hint").textContent = "";
+
+    highlight(targetText[0] || " ");
+    input.focus();
+  });
+
+  function getCookie(name) {
+    const v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+    return v ? v.pop() : '';
+  }
+
+  btnSave.addEventListener("click", async () => {
+    const m = recalcMetrics();
+    const correctKeystrokes = Math.max(totalKeystrokes - errors, 0);
+
+    const payload = {
+      duration_sec: m.sec,
+      total_keystrokes: totalKeystrokes,
+      correct_keystrokes: correctKeystrokes,
+      progress_chars: progress,
+      target_len: targetText.length,
+      errors: errors,
+      accuracy: m.accuracy,
+      cpm: m.cpm,
+      wpm: m.wpm,
+      layout: LANG,
+      completed: progress >= targetText.length,
+    };
+
+    try {
+      const resp = await fetch("{% url 'trainer_save' %}", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCookie("csrftoken"),
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await resp.json().catch(() => ({}));
+
+      if (data.ok) {
+        resultBox.innerHTML += "<br><span style='color:green; font-weight:900;'>" +
+          (LANG === "uk" ? "Збережено ✅" : "Saved ✅") +
+          "</span>";
+        btnSave.disabled = true;
+      } else {
+        resultBox.innerHTML += "<br><span style='color:red; font-weight:900;'>" +
+          (LANG === "uk" ? "Помилка збереження" : "Save error") +
+          "</span>";
+      }
+    } catch (err) {
+      resultBox.innerHTML += "<br><span style='color:red; font-weight:900;'>" +
+        (LANG === "uk" ? "Помилка мережі" : "Network error") +
+        "</span>";
+    }
+  });
+</script>
+
+{% endblock %}

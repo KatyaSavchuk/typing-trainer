@@ -1,0 +1,705 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+
+<section class="space-page">
+
+  <div class="space-wrap">
+
+    <div class="hud">
+      <div class="hud-left">
+        <div class="hud-item">Рахунок: <b id="score">0</b></div>
+        <div class="hud-item">Складність: <b id="diffLabel">легко</b></div>
+      </div>
+      <div class="hud-right" id="livesHud"></div>
+    </div>
+
+    <div class="difficulty">
+      <button class="diff-btn active" data-diff="easy" type="button">Легко</button>
+      <button class="diff-btn" data-diff="normal" type="button">Нормально</button>
+      <button class="diff-btn" data-diff="hard" type="button">Важко</button>
+    </div>
+
+    <div id="gamePanel" class="game-panel">
+      <canvas id="starsBg"></canvas>
+    </div>
+
+    <div class="controls">
+      <input id="typeInput" type="text" autocomplete="off" placeholder="Введи слово і натисни Enter" />
+      <div class="btns">
+        <button id="startBtn" type="button">Старт</button>
+        <button id="restartBtn" type="button">Заново</button>
+      </div>
+    </div>
+
+  </div>
+
+  {# ✅ words from view: "words" #}
+  {{ words|json_script:"space-words" }}
+
+</section>
+
+<style>
+  html { scroll-behavior: auto; }
+  body { overflow-x: hidden; }
+  * { overflow-anchor: none; }
+  main { padding: 0 !important; }
+
+  html, body{
+    margin: 0;
+    width: 100%;
+    overflow-x: hidden;
+    background: #070812;
+  }
+
+  .space-wrap{
+    transform: scale(0.85);
+    transform-origin: top center;
+  }
+
+  .space-page{
+    min-height: calc(100vh - 56px);
+    display: flex;
+    justify-content: center;
+    padding: 28px 14px;
+  }
+
+  .space-wrap{
+    width: min(980px, 92vw);
+    display: grid;
+    gap: 12px;
+    color: #fff;
+  }
+
+  .hud{
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.14);
+  }
+
+  .hud-left{
+    display:flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    font-weight: 800;
+  }
+
+  #livesHud{
+    display:flex;
+    gap: 6px;
+    align-items:center;
+    font-size: 18px;
+  }
+
+  .life{ display:inline-block; transition: transform .15s ease, opacity .15s ease; }
+  .life.off{ opacity: .25; transform: scale(0.92); }
+  .life.pop{ transform: scale(1.25); opacity: .2; }
+
+  .difficulty{
+    display:flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .diff-btn{
+    border: 0;
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-weight: 900;
+    cursor: pointer;
+    background: rgba(255,255,255,0.90);
+    color: #0a0a12;
+  }
+  .diff-btn.active{
+    background: #27d36b;
+    color: #08150d;
+  }
+
+  /* ✅ поле выше */
+  .game-panel{
+    position: relative;
+    height: 560px; /* было 420 */
+    border-radius: 16px;
+    overflow: hidden;
+    background: #070812;
+    border: 1px solid rgba(255,255,255,0.14);
+  }
+
+  #starsBg{
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display:block;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .game-panel > *:not(#starsBg){
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ===== астероиды ===== */
+  .word{
+    position:absolute;
+    left:0; top:0;
+    transform: translate(var(--tx, 0px), var(--ty, 0px));
+    will-change: transform;
+    pointer-events:none;
+  }
+
+  .rock{
+    width: var(--s, 120px);   /* дефолт увеличили */
+    height: var(--s, 120px);
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    border-radius: 22px;
+    clip-path: polygon(
+      12% 18%, 28% 8%, 46% 10%, 64% 6%, 82% 18%,
+      92% 38%, 88% 56%, 94% 72%, 80% 88%,
+      60% 94%, 42% 90%, 22% 92%, 10% 76%,
+      6% 56%, 10% 36%
+    );
+
+    color: rgba(255,255,255,0.95);
+    font-weight: 900;
+    font-size: 18px;          /* было 16 */
+    letter-spacing: .2px;
+    user-select:none;
+    text-align:center;
+    padding: 10px;
+
+    background:
+      radial-gradient(circle at 30% 28%, rgba(255,255,255,0.22), rgba(255,255,255,0.06) 45%, rgba(0,0,0,0.25) 100%),
+      radial-gradient(circle at 72% 70%, rgba(255,255,255,0.10), rgba(0,0,0,0) 55%);
+
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 18px 30px rgba(0,0,0,0.35);
+    backdrop-filter: blur(4px);
+
+    animation: none !important;
+    transform: none !important;
+    position: relative;
+  }
+
+  .rock::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    opacity:.75;
+    pointer-events:none;
+    clip-path: inherit;
+    background:
+      radial-gradient(circle at 25% 60%, rgba(0,0,0,0.22) 0 10px, transparent 11px),
+      radial-gradient(circle at 60% 35%, rgba(0,0,0,0.18) 0 7px, transparent 8px),
+      radial-gradient(circle at 72% 72%, rgba(0,0,0,0.16) 0 12px, transparent 13px);
+  }
+
+  .label{
+    position: relative;
+    z-index: 1;
+    white-space: nowrap;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.45);
+  }
+
+  .word.boom .rock{
+    animation: explode .22s ease-out forwards !important;
+  }
+  @keyframes explode{
+    to{
+      transform: scale(1.35);
+      opacity: 0;
+      filter: blur(1px);
+    }
+  }
+
+  .spark{
+    position:absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.9);
+    box-shadow: 0 0 18px rgba(255,255,255,0.55);
+    pointer-events:none;
+    z-index: 3;
+    animation: sparkFly .35s ease-out forwards;
+  }
+  @keyframes sparkFly{
+    to{
+      transform: translate(var(--dx), var(--dy)) scale(0.2);
+      opacity: 0;
+    }
+  }
+
+  .controls{ display:grid; gap: 10px; }
+
+  #typeInput{
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 14px;
+    font-size: 18px;
+    border: 1px solid rgba(255,255,255,0.18);
+    outline: none;
+    background: rgba(255,255,255,0.95);
+  }
+
+  .btns{
+    display:flex;
+    gap: 10px;
+    justify-content: center;
+  }
+
+  #startBtn, #restartBtn{
+    border: 0;
+    border-radius: 14px;
+    padding: 12px 18px;
+    font-weight: 900;
+    cursor: pointer;
+    background: rgba(255,255,255,0.90);
+    color: #0a0a12;
+  }
+  #restartBtn{
+    background: #27d36b;
+    color: #08150d;
+  }
+</style>
+
+<script>
+(() => {
+  const panel = document.getElementById("gamePanel");
+  const input = document.getElementById("typeInput");
+  const startBtn = document.getElementById("startBtn");
+  const restartBtn = document.getElementById("restartBtn");
+
+  const scoreEl = document.getElementById("score");
+  const diffLabel = document.getElementById("diffLabel");
+  const livesHud = document.getElementById("livesHud");
+
+  // ====== stars bg ======
+  const starsCanvas = document.getElementById("starsBg");
+  const starsCtx = starsCanvas ? starsCanvas.getContext("2d") : null;
+
+  let starsW = 0, starsH = 0, starsDpr = 1;
+  let stars = [];
+  let lastStarsTs = 0;
+
+  const rand = (min, max) => min + Math.random() * (max - min);
+
+  function resizeStars(){
+    if (!starsCanvas || !starsCtx || !panel) return;
+
+    const rect = panel.getBoundingClientRect();
+    starsDpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    starsW = Math.max(10, Math.floor(rect.width));
+    starsH = Math.max(10, Math.floor(rect.height));
+
+    starsCanvas.width = Math.floor(starsW * starsDpr);
+    starsCanvas.height = Math.floor(starsH * starsDpr);
+    starsCanvas.style.width = starsW + "px";
+    starsCanvas.style.height = starsH + "px";
+    starsCtx.setTransform(starsDpr,0,0,starsDpr,0,0);
+
+    buildStars();
+    drawStars(0);
+  }
+
+  function buildStars(){
+    const count = Math.max(120, Math.floor((starsW * starsH) / 4500));
+    stars = [];
+    for (let i=0; i<count; i++){
+      stars.push({
+        x: Math.random() * starsW,
+        y: Math.random() * starsH,
+        r: rand(0.6, 1.7),
+        a: rand(0.25, 0.9),
+        phase: rand(0, Math.PI * 2)
+      });
+    }
+  }
+
+  function drawStars(ts){
+    if (!starsCtx) return;
+    starsCtx.globalCompositeOperation = "source-over";
+    starsCtx.fillStyle = "#070812";
+    starsCtx.fillRect(0, 0, starsW, starsH);
+
+    for (const s of stars){
+      const twinkle = 0.65 + Math.sin(ts * 0.002 + s.phase) * 0.35;
+      const alpha = Math.max(0.05, Math.min(1, s.a * twinkle));
+      starsCtx.fillStyle = `rgba(255,255,255,${alpha})`;
+      starsCtx.beginPath();
+      starsCtx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      starsCtx.fill();
+    }
+  }
+
+  function starsLoop(ts){
+    if (!starsCtx) return;
+    if (ts - lastStarsTs > 33){
+      lastStarsTs = ts;
+      drawStars(ts);
+    }
+    requestAnimationFrame(starsLoop);
+  }
+
+  window.addEventListener("resize", resizeStars, { passive: true });
+  resizeStars();
+  requestAnimationFrame(starsLoop);
+
+  // ====== words from Django ======
+  let WORDS = ["space","typing","rocket"]; // fallback
+  const wordsNode = document.getElementById("space-words");
+  if (wordsNode) {
+    try {
+      const parsed = JSON.parse(wordsNode.textContent);
+      if (Array.isArray(parsed) && parsed.length) WORDS = parsed;
+    } catch (e) {
+      console.warn("Failed to parse words JSON:", e);
+    }
+  }
+
+  // ===== game settings =====
+  const DIFFICULTY_PRESETS = {
+    easy:   { spawnMs: 2400, speed: 14, lives: 5 },
+    normal: { spawnMs: 1900, speed: 22, lives: 3 },
+    hard:   { spawnMs: 1500, speed: 30, lives: 2 },
+  };
+  const DIFF_LABELS = { easy: "легко", normal: "нормально", hard: "важко" };
+
+  // ✅ меньше астероидов одновременно
+  const MAX_ON_SCREEN = 3;
+
+  let difficulty = "easy";
+  let running = false;
+  let lives = 3;
+  let maxLives = 3;
+  let score = 0;
+
+  let spawnIntervalMs = 1500;
+  let baseSpeed = 18;
+
+  let spawnTimer = null;
+  let lastFrameTs = null;
+
+  let objects = [];
+  let nextId = 1;
+
+  function updateHud() {
+    scoreEl.textContent = String(score);
+    if (diffLabel) diffLabel.textContent = DIFF_LABELS[difficulty] || difficulty;
+    renderLives();
+  }
+
+  function renderLives() {
+    if (!livesHud) return;
+    livesHud.innerHTML = "";
+    for (let i = 0; i < maxLives; i++) {
+      const span = document.createElement("span");
+      span.className = "life" + (i < lives ? "" : " off");
+      span.textContent = "❤️";
+      livesHud.appendChild(span);
+    }
+  }
+
+  function loseLifeAnimated() {
+    if (lives <= 0) return;
+    const hearts = livesHud ? Array.from(livesHud.querySelectorAll(".life")) : [];
+    const idx = lives - 1;
+    lives -= 1;
+    if (hearts[idx]) {
+      hearts[idx].classList.add("pop");
+      setTimeout(renderLives, 180);
+    } else {
+      renderLives();
+    }
+  }
+
+  function applyDifficulty() {
+    const p = DIFFICULTY_PRESETS[difficulty] || DIFFICULTY_PRESETS.easy;
+    maxLives = p.lives;
+    lives = p.lives;
+    spawnIntervalMs = p.spawnMs;
+    baseSpeed = p.speed;
+    updateHud();
+  }
+
+  // ===== no-duplicates bag =====
+  let bag = [];
+  let noMoreWords = false;
+
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function refillBag() {
+    bag = shuffle([...WORDS]);
+    noMoreWords = false;
+  }
+
+  function nextWord() {
+    if (bag.length === 0) return null;
+    return bag.pop();
+  }
+
+  function resetState() {
+    running = false;
+    score = 0;
+    objects = [];
+    nextId = 1;
+    lastFrameTs = null;
+
+    if (spawnTimer) {
+      clearTimeout(spawnTimer);
+      spawnTimer = null;
+    }
+
+    panel.querySelectorAll(".word").forEach(el => el.remove());
+    panel.querySelectorAll(".spark").forEach(el => el.remove());
+    input.value = "";
+
+    applyDifficulty();
+    refillBag();
+  }
+
+  function renderObj(obj) {
+    obj.el.style.setProperty("--tx", obj.x + "px");
+    obj.el.style.setProperty("--ty", obj.y + "px");
+  }
+
+  function removeObj(obj) {
+    if (obj.el && obj.el.parentNode) obj.el.remove();
+    objects = objects.filter(o => o.id !== obj.id);
+  }
+
+  function explodeAt(cx, cy) {
+    const n = 14 + Math.floor(Math.random() * 5);
+    for (let i=0; i<n; i++){
+      const p = document.createElement("div");
+      p.className = "spark";
+      const ang = Math.random() * Math.PI * 2;
+      const dist = 18 + Math.random() * 70;
+      p.style.left = (cx) + "px";
+      p.style.top  = (cy) + "px";
+      p.style.setProperty("--dx", (Math.cos(ang) * dist) + "px");
+      p.style.setProperty("--dy", (Math.sin(ang) * dist) + "px");
+      panel.appendChild(p);
+      setTimeout(() => p.remove(), 380);
+    }
+  }
+
+  // ===== anti-overlap spawn =====
+  const LANES = 7;
+  const SAFE_GAP = 16;
+
+  function canPlaceAt(x, size) {
+    for (const o of objects) {
+      // только если оба около зоны спавна
+      if (o.y > 60) continue;
+      const ax1 = x, ax2 = x + size;
+      const bx1 = o.x, bx2 = o.x + o.size;
+      const overlapX = !(ax2 + SAFE_GAP < bx1 || ax1 > bx2 + SAFE_GAP);
+      if (overlapX) return false;
+    }
+    return true;
+  }
+
+  function pickSpawnX(panelW, size) {
+    const laneW = panelW / LANES;
+    const tries = 24;
+
+    for (let t=0; t<tries; t++){
+      const lane = Math.floor(Math.random() * LANES);
+      const left = lane * laneW;
+
+      const x = Math.max(
+        10,
+        Math.min(panelW - size - 10, left + (laneW - size)/2 + rand(-laneW*0.18, laneW*0.18))
+      );
+
+      if (canPlaceAt(x, size)) return x;
+    }
+
+    return null;
+  }
+
+  function spawnWord() {
+    if (objects.length >= MAX_ON_SCREEN) return;
+
+    const text = nextWord();
+    if (!text) {
+      noMoreWords = true; // новых больше не будет
+      return;
+    }
+
+    const size = Math.round(rand(104, 132));
+    const panelRect = panel.getBoundingClientRect();
+
+    const x = pickSpawnX(panelRect.width, size);
+    if (x == null) {
+      // если некуда — положим слово обратно и попробуем позже
+      bag.push(text);
+      return;
+    }
+
+    const el = document.createElement("div");
+    el.className = "word";
+    el.innerHTML = `<div class="rock" style="--s:${size}px"><span class="label">${text}</span></div>`;
+    panel.appendChild(el);
+
+    const obj = {
+      id: nextId++,
+      text,
+      x,
+      y: -size - 10,          // ✅ всегда строго сверху
+      size,
+      speed: baseSpeed + Math.random() * 6,
+      el,
+    };
+
+    objects.push(obj);
+    renderObj(obj);
+  }
+
+  function startSpawner() {
+    if (spawnTimer) clearTimeout(spawnTimer);
+
+    const loop = () => {
+      if (!running) return;
+
+      spawnWord();
+
+      spawnTimer = setTimeout(loop, spawnIntervalMs);
+    };
+
+    spawnTimer = setTimeout(loop, 250); // быстро первая подача
+  }
+
+  function gameOver() {
+    running = false;
+    if (spawnTimer) {
+      clearTimeout(spawnTimer);
+      spawnTimer = null;
+    }
+    input.blur();
+    setTimeout(() => alert(`Гру завершено! Рахунок: ${score}`), 60);
+  }
+
+  function onConfirmWord() {
+    const typed = input.value.trim();
+    if (!typed) return;
+
+    const found = objects.find(o => o.text === typed);
+    if (found) {
+      const cx = found.x + found.size / 2;
+      const cy = found.y + found.size / 2;
+
+      explodeAt(cx, cy);
+
+      found.el.classList.add("boom");
+      setTimeout(() => removeObj(found), 220);
+
+      score += 1;
+      updateHud();
+
+      // ✅ не даём странице "подпрыгнуть"
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      input.focus({ preventScroll: true });
+    }
+
+    input.value = "";
+  }
+
+  function tick(ts) {
+    if (!running) return;
+
+    if (lastFrameTs == null) lastFrameTs = ts;
+    const dt = (ts - lastFrameTs) / 1000;
+    lastFrameTs = ts;
+
+    const bottomY = panel.getBoundingClientRect().height;
+
+    for (const obj of objects) {
+      obj.y += obj.speed * dt;
+      renderObj(obj);
+    }
+
+    // пропуск (упали вниз)
+    const missed = objects.filter(o => o.y > bottomY);
+    for (const obj of missed) {
+      removeObj(obj);
+
+      loseLifeAnimated();
+      updateHud();
+
+      if (lives <= 0) {
+        gameOver();
+        return;
+      }
+    }
+
+    // ✅ если слов больше нет и экран пустой — конец
+    if (noMoreWords && objects.length === 0) {
+      gameOver();
+      return;
+    }
+
+    requestAnimationFrame(tick);
+  }
+
+  function startGame() {
+    if (running) return;
+
+    running = true;
+    input.focus({ preventScroll: true });
+
+    if (objects.length === 0) spawnWord();
+    startSpawner();
+    requestAnimationFrame(tick);
+  }
+
+  startBtn.addEventListener("click", startGame);
+
+  restartBtn.addEventListener("click", () => {
+    resetState();
+    startGame();
+  });
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      e.stopPropagation();
+      onConfirmWord();
+    }
+  });
+
+  document.querySelectorAll(".diff-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (running) return;
+
+      document.querySelectorAll(".diff-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+
+      difficulty = btn.dataset.diff || "easy";
+      resetState();
+    });
+  });
+
+  resetState();
+})();
+</script>
+
+{% endblock %}

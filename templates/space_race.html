@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<section class="race-page">
+  <div class="page-fireworks page-fireworks-left" id="fireworksLeft"></div>
+  <div class="page-fireworks page-fireworks-right" id="fireworksRight"></div>
+
+  <div class="race-wrap">
+    <div class="race-scene">
+      <img src="{% static 'img/game2.png' %}" alt="Space background" class="race-bg">
+
+      <div class="race-overlay">
+        <div class="lane lane-1">
+          <div class="ship player" id="playerShip">
+            <img src="{% static 'img/space ship1.png' %}" alt="Player ship">
+          </div>
+        </div>
+
+        <div class="lane lane-2">
+          <div class="ship bot" id="botShip1">
+            <img src="{% static 'img/space ship2.png' %}" alt="Bot ship 1">
+          </div>
+        </div>
+
+        <div class="lane lane-3">
+          <div class="ship bot" id="botShip2">
+            <img src="{% static 'img/space ship3.png' %}" alt="Bot ship 2">
+          </div>
+        </div>
+
+        <div class="lane lane-4">
+          <div class="ship bot" id="botShip3">
+            <img src="{% static 'img/space ship4.png' %}" alt="Bot ship 3">
+          </div>
+        </div>
+
+        <div class="finish-line"></div>
+      </div>
+    </div>
+
+    <div class="race-panel">
+      <div class="race-text" id="raceText">{{ race_text }}</div>
+
+      <input
+        type="text"
+        id="raceInput"
+        class="race-input"
+        placeholder="Почни друкувати тут..."
+        autocomplete="off"
+      >
+
+      <div class="race-buttons">
+        <button id="startRaceBtn" type="button">Почати</button>
+        <button id="restartRaceBtn" type="button">Заново</button>
+      </div>
+
+      <div class="race-stats">
+        <span>Прогрес: <b id="progressValue">0%</b></span>
+        <span>Статус: <b id="raceStatus">Очікує старту</b></span>
+      </div>
+    </div>
+
+    {{ race_text|json_script:"race-text-data" }}
+  </div>
+</section>
+
+<style>
+  main {
+    padding: 0 !important;
+  }
+
+  .race-page {
+    min-height: calc(100vh - 56px);
+    display: flex;
+    justify-content: center;
+    padding: 28px 16px;
+    background: #070812;
+    position: relative;
+  }
+
+  .race-wrap {
+    width: min(1200px, 96vw);
+    display: grid;
+    gap: 18px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .race-scene {
+    position: relative;
+    height: 460px;
+    overflow: hidden;
+    border-radius: 24px;
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+  }
+
+  .race-bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .race-overlay {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    height: 100%;
+    padding: 36px 32px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .lane {
+    position: relative;
+    height: 78px;
+    border-top: 2px solid rgba(86, 181, 255, 0.55);
+    border-bottom: 2px solid rgba(255, 104, 224, 0.35);
+    border-radius: 18px;
+    background: rgba(255,255,255,0.03);
+    box-shadow: inset 0 0 18px rgba(255,255,255,0.04);
+  }
+
+  .ship {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    transition: left 0.12s linear;
+  }
+
+  .ship img {
+    width: 110px;
+    height: auto;
+    display: block;
+    user-select: none;
+    pointer-events: none;
+  }
+
+  .finish-line {
+    position: absolute;
+    top: 28px;
+    bottom: 28px;
+    right: 88px;
+    width: 10px;
+    border-radius: 4px;
+    background: repeating-linear-gradient(
+      to bottom,
+      #fff 0 16px,
+      #000 16px 32px
+    );
+    box-shadow: 0 0 14px rgba(255,255,255,0.75);
+  }
+
+  .race-panel {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 20px;
+    padding: 18px;
+    display: grid;
+    gap: 14px;
+    color: #fff;
+  }
+
+  .race-text {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.5;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.06);
+  }
+
+  .race-input {
+    width: 100%;
+    padding: 14px 16px;
+    font-size: 18px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.18);
+    outline: none;
+    background: #fff;
+    color: #111;
+  }
+
+  .race-buttons {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .race-buttons button {
+    border: 0;
+    border-radius: 14px;
+    padding: 12px 18px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  #startRaceBtn {
+    background: #27d36b;
+    color: #08150d;
+  }
+
+  #restartRaceBtn {
+    background: #ffffff;
+    color: #111;
+  }
+
+  .race-stats {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    font-size: 16px;
+  }
+
+  .page-fireworks {
+    position: fixed;
+    top: 70px;
+    bottom: 0;
+    width: 220px;
+    pointer-events: none;
+    z-index: 30;
+    overflow: hidden;
+    display: none;
+  }
+
+  .page-fireworks-left {
+    left: 0;
+  }
+
+  .page-fireworks-right {
+    right: 0;
+  }
+
+  .firework-particle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    opacity: 0;
+    animation: burst 900ms ease-out forwards;
+  }
+
+  @keyframes burst {
+    0% {
+      transform: translate(0, 0) scale(0.4);
+      opacity: 1;
+    }
+    100% {
+      transform: translate(var(--tx), var(--ty)) scale(1.4);
+      opacity: 0;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .race-scene {
+      height: 380px;
+    }
+
+    .ship img {
+      width: 90px;
+    }
+
+    .race-text {
+      font-size: 18px;
+    }
+
+    .page-fireworks {
+      width: 120px;
+    }
+  }
+</style>
+
+<script src="{% static 'js/space_race.js' %}"></script>
+{% endblock %}

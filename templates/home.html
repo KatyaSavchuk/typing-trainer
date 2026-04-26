@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+<section class="hero">
+  <div class="hero-overlay"></div>
+
+  <div class="hero-inner">
+    <div class="hero-left">
+
+      <h1 class="hero-title">
+        Навчись друкувати швидко<br>
+        з <span>Typing Trainer</span>
+      </h1>
+
+      <p class="hero-sub"></p>
+
+      <div class="hero-actions">
+        <a class="hero-btn" href="{% url 'lessons_list' %}">
+          ▶ Почати навчання
+        </a>
+
+        <div class="hero-meta"></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<style>
+  main { padding: 0 !important; }
+
+  .hero {
+    position: relative;
+    min-height: calc(100vh - var(--header-h, 68px));
+    width: 100%;
+    background-image: url("{% static 'img/robot-typing.png' %}");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    overflow: hidden;
+  }
+
+  .hero-overlay{
+    position:absolute;
+    inset:0;
+    background:
+      radial-gradient(900px 500px at 25% 35%, rgba(20, 180, 255, 0.18), transparent 60%),
+      radial-gradient(900px 500px at 70% 30%, rgba(160, 60, 255, 0.18), transparent 55%),
+      linear-gradient(90deg, rgba(15, 10, 35, 0.55) 0%, rgba(15, 10, 35, 0.25) 45%, rgba(15, 10, 35, 0.05) 100%);
+    pointer-events:none;
+  }
+
+  .hero-inner{
+    position: relative;
+    z-index: 2;
+    width: min(1720px, calc(100% - 24px));
+    min-height: calc(100vh - var(--header-h, 68px));
+    margin: 0 auto;
+    padding: 36px 44px 40px;
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .hero-left{
+    max-width: 760px;
+    color: #fff;
+    margin-top: 20px;
+    padding-left: 12px;
+  }
+
+  .hero-title{
+    margin: 0 0 16px;
+    font-weight: 900;
+    line-height: 1.04;
+    font-size: clamp(34px, 4.8vw, 74px);
+    max-width: 760px;
+  }
+
+  .hero-title span{
+    color: rgba(255,255,255,0.95);
+  }
+
+  .hero-sub{
+    margin: 0 0 22px;
+    font-size: 16px;
+    line-height: 1.55;
+    color: rgba(255,255,255,0.88);
+    max-width: 560px;
+  }
+
+  .hero-actions{
+    display:flex;
+    gap: 18px;
+    align-items:center;
+    flex-wrap:wrap;
+    margin-top: 64px;
+  }
+
+  .hero-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap: 10px;
+    padding: 14px 22px;
+    border-radius: 14px;
+    background: #27d36b;
+    color: #0b1b10;
+    text-decoration:none;
+    font-weight: 900;
+    box-shadow: 0 10px 24px rgba(39, 211, 107, 0.35);
+    border: 1px solid rgba(255,255,255,0.25);
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+
+  .hero-btn:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 14px 28px rgba(39, 211, 107, 0.45);
+  }
+
+  .hero-meta{
+    display:flex;
+    gap: 10px;
+    align-items:center;
+    flex-wrap:wrap;
+    font-weight: 800;
+    font-size: 14px;
+    color: rgba(255,255,255,0.8);
+    padding-top: 2px;
+  }
+
+  .hero-meta .dot{
+    opacity: .6;
+  }
+
+  @media (max-width: 1100px){
+    .hero-inner{
+      width: min(100% - 18px, 1720px);
+      padding: 28px 26px 34px;
+    }
+
+    .hero-left{
+      max-width: 620px;
+      padding-left: 0;
+    }
+
+    .hero-title{
+      font-size: clamp(32px, 5vw, 58px);
+      max-width: 620px;
+    }
+  }
+
+  @media (max-width: 760px){
+    .hero-inner{
+      width: calc(100% - 12px);
+      padding: 26px 16px 32px;
+    }
+
+    .hero-left{
+      max-width: 100%;
+      margin-top: 8px;
+    }
+
+    .hero-sub{
+      max-width: 100%;
+    }
+
+    .hero-actions{
+      margin-top: 28px;
+    }
+  }
+</style>
+
+{% endblock %}

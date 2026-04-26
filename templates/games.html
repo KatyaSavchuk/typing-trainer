@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+<canvas id="milkyway"></canvas>
+
+<section class="games-page">
+  <div class="games-content">
+    <h1>Ігри</h1>
+    <p>Навчайся друкувати, граючи ✨</p>
+
+    <div class="games-grid">
+      <!-- 1) Space Typing -->
+      <a class="game-card" href="{% url 'space_typing' %}">
+        🌑 Астероїди
+        <span class="game-sub">Space Typing</span>
+      </a>
+
+<a href="{% url 'space_race' %}" class="game-card">
+  🚀 Космічна гонка
+  <span class="game-sub">Typing race</span>
+</a>
+    </div>
+  </div>
+</section>
+
+<script src="{% static 'js/milkyway.js' %}"></script>
+
+<style>
+  main { padding: 0 !important; }
+
+  /* canvas на весь экран */
+  #milkyway{
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0;
+    background: #05050a;
+  }
+
+  /* контент поверх canvas */
+  .games-page{
+    position: relative;
+    min-height: calc(100vh - 56px);
+    z-index: 1;
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .games-content{
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 48px 20px;
+    color: #fff;
+    width: 100%;
+  }
+
+  .games-content h1{
+    font-size: clamp(32px, 4vw, 56px);
+    font-weight: 900;
+    margin: 0 0 8px;
+  }
+
+  .games-content p{
+    margin: 0 0 24px;
+    opacity: .85;
+    font-size: 18px;
+  }
+
+  .games-grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+  }
+
+  .game-card{
+    display: block; /* важно для <a> */
+    text-decoration: none;
+    color: #fff;
+
+    background: rgba(255,255,255,0.10);
+    backdrop-filter: blur(10px);
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,0.14);
+    padding: 26px;
+
+    font-size: 18px;
+    font-weight: 800;
+    text-align: center;
+    cursor: pointer;
+    transition: transform .2s ease, background .2s ease;
+  }
+
+  .game-card:hover{
+    transform: translateY(-4px);
+    background: rgba(255,255,255,0.15);
+  }
+
+  .game-sub{
+    display: block;
+    margin-top: 8px;
+    font-size: 13px;
+    opacity: .7;
+    font-weight: 600;
+  }
+
+  .game-card.disabled{
+    opacity: .55;
+    cursor: not-allowed;
+  }
+
+  .game-card.disabled:hover{
+    transform: none;
+    background: rgba(255,255,255,0.10);
+  }
+</style>
+
+{% endblock %}

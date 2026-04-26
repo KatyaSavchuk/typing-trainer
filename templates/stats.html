@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="stats-page">
+
+  <div class="tabs">
+    <button class="tab-btn active" type="button" data-tab="trainer">Тренажер</button>
+    <button class="tab-btn" type="button" data-tab="test">Тестування</button>
+  </div>
+
+  <!-- ТРЕНАЖЕР -->
+  <div class="tab-panel active" id="panel-trainer">
+    <div class="stats-grid-top">
+      <div class="card">Найкращий WPM<br><b>{{ trainer_stats.summary.best_wpm|default:0|floatformat:0 }}</b></div>
+      <div class="card">Середній WPM<br><b>{{ trainer_stats.summary.avg_wpm|default:0|floatformat:0 }}</b></div>
+      <div class="card">Найкраща точність<br><b>{{ trainer_stats.summary.best_acc|default:0|floatformat:0 }}%</b></div>
+      <div class="card">Середня точність<br><b>{{ trainer_stats.summary.avg_acc|default:0|floatformat:0 }}%</b></div>
+    </div>
+
+    <div class="stats-grid-charts">
+      <div class="card"><canvas id="trainerWpmChart" height="140"></canvas></div>
+      <div class="card"><canvas id="trainerAccChart" height="140"></canvas></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Останні спроби — тренажер</div>
+      <div style="overflow:auto;">
+        <table class="stats-table">
+          <thead>
+            <tr>
+              <th>Дата</th>
+              <th>Режим</th>
+              <th class="num">WPM</th>
+              <th class="num">Точність</th>
+              <th class="num">Помилки</th>
+              <th class="num">Час</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for a in trainer_stats.attempts %}
+            <tr>
+              <td>{{ a.created_at|date:"d.m.Y H:i" }}</td>
+              <td>{{ a.mode }}</td>
+              <td class="num">{{ a.wpm|floatformat:0 }}</td>
+              <td class="num">{{ a.accuracy|floatformat:0 }}%</td>
+              <td class="num">{{ a.errors }}</td>
+              <td class="num">{{ a.duration_sec }}с</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="empty-row">Поки що немає збережених результатів тренажера.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ТЕСТУВАННЯ -->
+  <div class="tab-panel" id="panel-test">
+    <div class="stats-grid-top">
+      <div class="card">Найкращий WPM<br><b>{{ test_stats.summary.best_wpm|default:0|floatformat:0 }}</b></div>
+      <div class="card">Середній WPM<br><b>{{ test_stats.summary.avg_wpm|default:0|floatformat:0 }}</b></div>
+      <div class="card">Найкраща точність<br><b>{{ test_stats.summary.best_acc|default:0|floatformat:0 }}%</b></div>
+      <div class="card">Середня точність<br><b>{{ test_stats.summary.avg_acc|default:0|floatformat:0 }}%</b></div>
+    </div>
+
+    <div class="stats-grid-charts">
+      <div class="card"><canvas id="testWpmChart" height="140"></canvas></div>
+      <div class="card"><canvas id="testAccChart" height="140"></canvas></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Останні спроби — тестування</div>
+      <div style="overflow:auto;">
+        <table class="stats-table">
+          <thead>
+            <tr>
+              <th>Дата</th>
+              <th>Режим</th>
+              <th class="num">WPM</th>
+              <th class="num">Точність</th>
+              <th class="num">Помилки</th>
+              <th class="num">Час</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for a in test_stats.attempts %}
+            <tr>
+              <td>{{ a.created_at|date:"d.m.Y H:i" }}</td>
+              <td>{{ a.mode }}</td>
+              <td class="num">{{ a.wpm|floatformat:0 }}</td>
+              <td class="num">{{ a.accuracy|floatformat:0 }}%</td>
+              <td class="num">{{ a.errors }}</td>
+              <td class="num">{{ a.duration_sec }}с</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="empty-row">Поки що немає збережених результатів тестування.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<style>
+  .stats-page{
+    padding: 26px 18px;
+    color:#fff;
+  }
+
+  .tabs{
+    display:flex;
+    gap:10px;
+    margin-bottom:16px;
+    flex-wrap:wrap;
+  }
+
+  .tab-btn{
+    border:1px solid rgba(255,255,255,0.14);
+    background:rgba(255,255,255,0.06);
+    color:#fff;
+    border-radius:12px;
+    padding:10px 18px;
+    font-weight:800;
+    cursor:pointer;
+    transition:0.2s ease;
+  }
+
+  .tab-btn.active{
+    background:#2f8cff;
+    border-color:#2f8cff;
+    color:#fff;
+  }
+
+  .tab-panel{
+    display:none;
+  }
+
+  .tab-panel.active{
+    display:block;
+  }
+
+  .stats-grid-top{
+    display:grid;
+    gap:14px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-bottom:16px;
+  }
+
+  .stats-grid-charts{
+    display:grid;
+    gap:14px;
+    grid-template-columns: 1fr 1fr;
+    margin-bottom:16px;
+  }
+
+  .card{
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 16px;
+    padding: 14px;
+    box-shadow: 0 14px 30px rgba(0,0,0,0.25);
+  }
+
+  .card b{
+    font-size: 22px;
+  }
+
+  .section-title{
+    font-weight:900;
+    margin-bottom:10px;
+  }
+
+  .stats-table{
+    width:100%;
+    border-collapse:collapse;
+  }
+
+  .stats-table thead{
+    opacity:.8;
+  }
+
+  .stats-table th,
+  .stats-table td{
+    padding:8px;
+    text-align:left;
+  }
+
+  .stats-table tbody tr{
+    border-top:1px solid rgba(255,255,255,0.08);
+  }
+
+  .stats-table .num{
+    text-align:right;
+  }
+
+  .empty-row{
+    padding:10px;
+    opacity:.7;
+  }
+
+  @media (max-width: 1100px){
+    .stats-grid-top{
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .stats-grid-charts{
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 640px){
+    .stats-grid-top{
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+{{ trainer_stats.labels|json_script:"trainer-labels-data" }}
+{{ trainer_stats.wpm_data|json_script:"trainer-wpm-data" }}
+{{ trainer_stats.acc_data|json_script:"trainer-acc-data" }}
+
+{{ test_stats.labels|json_script:"test-labels-data" }}
+{{ test_stats.wpm_data|json_script:"test-wpm-data" }}
+{{ test_stats.acc_data|json_script:"test-acc-data" }}
+
+<script>
+  const trainerLabels = JSON.parse(document.getElementById("trainer-labels-data").textContent);
+  const trainerWpm = JSON.parse(document.getElementById("trainer-wpm-data").textContent);
+  const trainerAcc = JSON.parse(document.getElementById("trainer-acc-data").textContent);
+
+  const testLabels = JSON.parse(document.getElementById("test-labels-data").textContent);
+  const testWpm = JSON.parse(document.getElementById("test-wpm-data").textContent);
+  const testAcc = JSON.parse(document.getElementById("test-acc-data").textContent);
+
+  new Chart(document.getElementById("trainerWpmChart"), {
+    type: "line",
+    data: {
+      labels: trainerLabels,
+      datasets: [{
+        label: "Швидкість (WPM)",
+        data: trainerWpm,
+        tension: 0.35,
+        borderWidth: 3
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: true } }
+    }
+  });
+
+  new Chart(document.getElementById("trainerAccChart"), {
+    type: "line",
+    data: {
+      labels: trainerLabels,
+      datasets: [{
+        label: "Точність (%)",
+        data: trainerAcc,
+        tension: 0.35,
+        borderWidth: 3
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: true } },
+      scales: { y: { suggestedMin: 0, suggestedMax: 100 } }
+    }
+  });
+
+  new Chart(document.getElementById("testWpmChart"), {
+    type: "line",
+    data: {
+      labels: testLabels,
+      datasets: [{
+        label: "Швидкість (WPM)",
+        data: testWpm,
+        tension: 0.35,
+        borderWidth: 3
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: true } }
+    }
+  });
+
+  new Chart(document.getElementById("testAccChart"), {
+    type: "line",
+    data: {
+      labels: testLabels,
+      datasets: [{
+        label: "Точність (%)",
+        data: testAcc,
+        tension: 0.35,
+        borderWidth: 3
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: true } },
+      scales: { y: { suggestedMin: 0, suggestedMax: 100 } }
+    }
+  });
+
+  const tabButtons = document.querySelectorAll(".tab-btn");
+  const tabPanels = document.querySelectorAll(".tab-panel");
+
+  tabButtons.forEach(button => {
+    button.addEventListener("click", () => {
+      const tab = button.dataset.tab;
+
+      tabButtons.forEach(btn => btn.classList.remove("active"));
+      tabPanels.forEach(panel => panel.classList.remove("active"));
+
+      button.classList.add("active");
+      document.getElementById(`panel-${tab}`).classList.add("active");
+    });
+  });
+</script>
+
+{% endblock %}

@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<section class="profile-settings-page">
+  <div class="profile-bg"></div>
+  <div class="profile-overlay"></div>
+
+  <div class="profile-wrap">
+    <div class="ps-card">
+      <div class="ps-head">
+        <h1 class="ps-title">Налаштування профілю</h1>
+        <div class="ps-sub">Обери мову уроків, текстів і розкладки клавіатури.</div>
+      </div>
+
+      <form method="post" class="ps-form">
+        {% csrf_token %}
+
+        <div class="ps-field">
+          <div class="ps-label">Мова навчання</div>
+
+          <div class="lang-grid">
+            <label class="lang-option">
+              <input type="radio" name="learning_language" value="uk"
+                     {% if request.user.profile.learning_language == "uk" %}checked{% endif %}>
+              <div class="lang-card">
+                <div class="lang-top">
+                  <div class="lang-flag">🇺🇦</div>
+                  <div class="lang-name">Українська</div>
+                </div>
+                <div class="lang-desc">Уроки, тексти та розкладка: UA</div>
+              </div>
+            </label>
+
+            <label class="lang-option">
+              <input type="radio" name="learning_language" value="en"
+                     {% if request.user.profile.learning_language == "en" %}checked{% endif %}>
+              <div class="lang-card">
+                <div class="lang-top">
+                  <div class="lang-flag">🇬🇧</div>
+                  <div class="lang-name">English</div>
+                </div>
+                <div class="lang-desc">Lessons, texts and layout: EN</div>
+              </div>
+            </label>
+          </div>
+
+          {% if form.learning_language.errors %}
+            <div class="ps-error">{{ form.learning_language.errors }}</div>
+          {% endif %}
+        </div>
+
+        <div class="ps-actions">
+          <button class="btn-save" type="submit">Зберегти</button>
+          <a class="btn-cancel" href="{% url 'profile' %}">Назад</a>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</section>
+
+<style>
+  main { padding: 0 !important; }
+
+  .profile-settings-page{
+    position: relative;
+    min-height: calc(100vh - 56px);
+    overflow: hidden;
+  }
+
+  .profile-bg{
+    position:absolute;
+    inset:0;
+    background-image: url("{% static 'img/lesson1.png' %}");
+    background-size: cover;
+    background-position: center;
+    background-repeat:no-repeat;
+    transform: scale(1.03);
+    filter: saturate(1.05);
+  }
+
+  .profile-overlay{
+    position:absolute;
+    inset:0;
+    background:
+      radial-gradient(900px 600px at 25% 20%, rgba(110, 50, 255, 0.28), transparent 60%),
+      radial-gradient(900px 600px at 75% 30%, rgba(0, 220, 255, 0.18), transparent 55%),
+      linear-gradient(180deg, rgba(10, 8, 25, 0.78) 0%, rgba(10, 8, 25, 0.46) 40%, rgba(10, 8, 25, 0.22) 100%);
+    pointer-events:none;
+  }
+
+  .profile-wrap{
+    position:relative;
+    z-index:1;
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 32px 18px 48px;
+    color:#fff;
+  }
+
+  .ps-card{
+    border-radius: 22px;
+    padding: 22px 22px 20px;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.18);
+    box-shadow: 0 18px 46px rgba(0,0,0,0.28);
+    backdrop-filter: blur(12px);
+  }
+
+  .ps-head{ margin-bottom: 16px; }
+
+  .ps-title{
+    margin:0 0 6px;
+    font-size: 28px;     
+    font-weight: 900;
+    letter-spacing: .2px;
+    line-height: 1.12;
+  }
+
+  .ps-sub{
+    opacity:.85;
+    line-height:1.45;
+    font-size: 14px;
+    max-width: 720px;
+  }
+
+  .ps-form{ margin-top: 14px; }
+
+  .ps-field{ margin-bottom: 18px; }
+
+  .ps-label{
+    font-weight: 900;
+    margin-bottom: 10px;
+    opacity:.95;
+    font-size: 14px;
+  }
+
+  .lang-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .lang-option{
+    cursor:pointer;
+    user-select:none;
+    display:block;
+  }
+
+  .lang-option input{ display:none; }
+
+  .lang-card{
+    position: relative;
+    border-radius: 18px;
+    padding: 16px 16px 14px;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.18);
+    box-shadow: 0 14px 32px rgba(0,0,0,0.16);
+    transition: transform .12s ease, background .12s ease, border-color .12s ease, box-shadow .12s ease;
+    min-height: 98px;
+    overflow: hidden;
+  }
+
+  .lang-card::before{
+    content:"";
+    position:absolute;
+    inset:-60px -60px auto auto;
+    width: 180px;
+    height: 180px;
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.18), transparent 60%);
+    transform: rotate(18deg);
+    pointer-events:none;
+  }
+
+  .lang-option:hover .lang-card{
+    transform: translateY(-2px);
+    background: rgba(255,255,255,0.13);
+    border-color: rgba(255,255,255,0.25);
+    box-shadow: 0 18px 40px rgba(0,0,0,0.20);
+  }
+
+  .lang-option input:checked + .lang-card{
+    background: rgba(39, 211, 107, 0.14);
+    border-color: rgba(39, 211, 107, 0.50);
+    box-shadow: 0 18px 44px rgba(39, 211, 107, 0.16);
+  }
+
+  .lang-option input:checked + .lang-card::after{
+    content:"✓";
+    position:absolute;
+    top: 12px;
+    right: 12px;
+    width: 26px;
+    height: 26px;
+    border-radius: 10px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight: 900;
+    color: #0b1b10;
+    background: rgba(39, 211, 107, 0.95);
+    box-shadow: 0 10px 22px rgba(39, 211, 107, 0.35);
+  }
+
+  .lang-top{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    margin-bottom: 8px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .lang-flag{ font-size: 22px; }
+  .lang-name{ font-weight: 900; font-size: 16px; }
+  .lang-desc{
+    opacity:.86;
+    font-size: 13px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .ps-actions{
+    display:flex;
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .btn-save{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding: 12px 18px;
+    border-radius: 14px;
+    background: #27d36b;
+    color: #0b1b10;
+    text-decoration:none;
+    font-weight: 900;
+    border: 1px solid rgba(255,255,255,0.22);
+    box-shadow: 0 12px 26px rgba(37, 49, 42, 0.34);
+    cursor:pointer;
+    transition: transform .12s ease, filter .12s ease;
+    min-width: 140px;
+  }
+  .btn-save:hover{ transform: translateY(-1px); filter: brightness(1.03); }
+  .btn-save:active{ transform: translateY(0px); filter: brightness(0.98); }
+
+  .btn-cancel{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding: 12px 18px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.06);
+    color: #fff;
+    text-decoration:none;
+    font-weight: 900;
+    border: 1px solid rgba(255,255,255,0.20);
+    backdrop-filter: blur(10px);
+    transition: transform .12s ease, background .12s ease, border-color .12s ease;
+    min-width: 120px;
+  }
+  .btn-cancel:hover{
+    transform: translateY(-1px);
+    background: rgba(255,255,255,0.10);
+    border-color: rgba(255,255,255,0.26);
+  }
+  .btn-cancel:active{ transform: translateY(0px); }
+
+  .ps-error{
+    margin-top: 8px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(229,57,53,0.12);
+    border: 1px solid rgba(229,57,53,0.25);
+    font-weight: 800;
+  }
+
+  @media (max-width: 760px){
+    .lang-grid{ grid-template-columns: 1fr; }
+    .ps-title{ font-size: 24px; }
+    .ps-card{ padding: 18px; }
+    .ps-actions{ flex-direction: column; }
+    .btn-save, .btn-cancel{ width: 100%; }
+  }
+</style>
+{% endblock %}
