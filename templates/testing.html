@@ -55,8 +55,6 @@
                 У цій тематиці поки немає текстів.
               </div>
             {% endif %}
-          {% else %}
-            <!-- ничего не показываем, пока тематика не выбрана -->
           {% endif %}
         </div>
 
@@ -109,7 +107,6 @@
           </div>
         {% endif %}
 
-       
         <div class="test-card">
 
           <div id="textBox" class="text-box">
@@ -129,7 +126,6 @@
                    class="typing-input">
           </div>
 
-          <!-- нижний ряд: только кнопка повторить -->
           <div class="bottom-row bottom-row-right">
             <button id="btnRepeat" type="button" class="btn-ghost">
               Повторити
@@ -184,7 +180,6 @@
 
   .muted{ color: rgba(255,255,255,0.72); }
 
-  /* ===== LEFT ===== */
   .side-panel{
     width: 320px;
     padding: 16px;
@@ -221,9 +216,17 @@
     border: 1px solid rgba(255,255,255,0.12);
     background: rgba(0,0,0,0.18);
   }
-  .side-all.active{ background: rgba(255,255,255,0.12); color:#fff; }
 
-  .side-list{ display:flex; flex-direction:column; gap:10px; }
+  .side-all.active{
+    background: rgba(255,255,255,0.12);
+    color:#fff;
+  }
+
+  .side-list{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
 
   .side-item{
     display:block;
@@ -235,18 +238,23 @@
     border: 1px solid rgba(255,255,255,0.08);
     transition: transform .12s ease, background .12s ease, border-color .12s ease;
   }
+
   .side-item:hover{
     transform: translateY(-1px);
     background: rgba(0,0,0,0.24);
     border-color: rgba(255,255,255,0.14);
   }
+
   .side-item.active{
     background: rgba(255,255,255,0.12);
     border-color: rgba(255,255,255,0.18);
     font-weight: 900;
   }
 
-  .side-text .text-title{ font-weight: 900; }
+  .side-text .text-title{
+    font-weight: 900;
+  }
+
   .side-text .text-meta{
     margin-top: 4px;
     font-size: 12px;
@@ -259,7 +267,6 @@
     margin: 14px 0;
   }
 
-  /* Выезжающий блок текстов */
   .texts-drawer{
     overflow: hidden;
     max-height: 0;
@@ -267,6 +274,7 @@
     transform: translateX(-12px);
     transition: max-height .35s ease, opacity .25s ease, transform .35s ease;
   }
+
   .texts-drawer.open{
     max-height: 900px;
     opacity: 1;
@@ -280,8 +288,10 @@
     gap: 10px;
   }
 
-  /* ===== RIGHT ===== */
-  .main-area{ flex: 1; min-width: 0; }
+  .main-area{
+    flex: 1;
+    min-width: 0;
+  }
 
   .head-card{
     border-radius: 18px;
@@ -299,7 +309,6 @@
     flex-wrap: wrap;
   }
 
-  /* СДЕЛАЛИ ЧУТЬ МЕНЬШЕ */
   .page-title{
     margin: 0 0 8px;
     font-size: clamp(22px, 2.6vw, 38px);
@@ -307,9 +316,19 @@
     font-weight: 950;
   }
 
-  .page-sub{ color: rgba(255,255,255,0.86); font-size: 15px; }
-  .page-sub b{ color:#fff; }
-  .dot{ margin: 0 8px; opacity: .6; }
+  .page-sub{
+    color: rgba(255,255,255,0.86);
+    font-size: 15px;
+  }
+
+  .page-sub b{
+    color:#fff;
+  }
+
+  .dot{
+    margin: 0 8px;
+    opacity: .6;
+  }
 
   .stats-row{
     display:flex;
@@ -342,6 +361,7 @@
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
   }
+
   .note-warn{
     background: rgba(255, 200, 80, 0.10);
     border-color: rgba(255, 200, 80, 0.22);
@@ -396,17 +416,21 @@
     box-shadow: 0 14px 30px rgba(39, 211, 107, 0.35);
     transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
   }
+
   .btn-primary:hover{
     transform:translate(-50%,-50%) translateY(-1px);
     box-shadow: 0 18px 36px rgba(39, 211, 107, 0.45);
   }
+
   .btn-primary:disabled{
     opacity: .6;
     cursor: not-allowed;
     filter: grayscale(20%);
   }
 
-  .input-wrap{ margin-top: 14px; }
+  .input-wrap{
+    margin-top: 14px;
+  }
 
   .typing-input{
     width:100%;
@@ -420,12 +444,20 @@
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
   }
-  .typing-input::placeholder{ color: rgba(255,255,255,0.60); }
+
+  .typing-input::placeholder{
+    color: rgba(255,255,255,0.60);
+  }
+
   .typing-input:focus{
     border-color: rgba(39, 211, 107, 0.65);
     box-shadow: 0 0 0 4px rgba(39, 211, 107, 0.18);
   }
-  .typing-input:disabled{ opacity: .75; cursor: not-allowed; }
+
+  .typing-input:disabled{
+    opacity: .75;
+    cursor: not-allowed;
+  }
 
   .bottom-row{
     margin-top: 14px;
@@ -435,7 +467,10 @@
     justify-content: space-between;
     flex-wrap: wrap;
   }
-  .bottom-row-right{ justify-content: flex-end; }
+
+  .bottom-row-right{
+    justify-content: flex-end;
+  }
 
   .btn-ghost{
     padding: 10px 14px;
@@ -447,6 +482,7 @@
     cursor: pointer;
     transition: transform .12s ease, background .12s ease;
   }
+
   .btn-ghost:hover{
     transform: translateY(-1px);
     background: rgba(0,0,0,0.26);
@@ -462,9 +498,17 @@
   }
 
   @media (max-width: 980px){
-    .testing-layout{ flex-direction: column; }
-    .side-panel{ width: 100%; }
-    .stats-row{ justify-content:flex-start; }
+    .testing-layout{
+      flex-direction: column;
+    }
+
+    .side-panel{
+      width: 100%;
+    }
+
+    .stats-row{
+      justify-content:flex-start;
+    }
   }
 </style>
 
@@ -493,14 +537,27 @@
 
   function moveCursorToEnd() {
     const len = input.value.length;
-    try { input.setSelectionRange(len, len); } catch(e) {}
+    try {
+      input.setSelectionRange(len, len);
+    } catch(e) {}
   }
 
   input.addEventListener("keydown", (e) => {
-    if (e.key === "Backspace" || e.key === "Delete") { e.preventDefault(); return; }
-    const blockedNav = ["ArrowLeft","ArrowRight","ArrowUp","ArrowDown","Home","End"];
-    if (blockedNav.includes(e.key)) { e.preventDefault(); return; }
-    if ((e.ctrlKey || e.metaKey) && ["v","x","a"].includes(e.key.toLowerCase())) { e.preventDefault(); return; }
+    if (e.key === "Backspace" || e.key === "Delete") {
+      e.preventDefault();
+      return;
+    }
+
+    const blockedNav = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"];
+    if (blockedNav.includes(e.key)) {
+      e.preventDefault();
+      return;
+    }
+
+    if ((e.ctrlKey || e.metaKey) && ["v", "x", "a"].includes(e.key.toLowerCase())) {
+      e.preventDefault();
+      return;
+    }
   });
 
   input.addEventListener("paste", (e) => e.preventDefault());
@@ -513,22 +570,31 @@
   let startTime = 0;
   let timerId = null;
 
-  let typedChars = 0;
-  let correctChars = 0;
+  let progress = 0;
+  let totalKeystrokes = 0;
   let errors = 0;
 
   function recalcMetrics(elapsedSec) {
     const sec = Math.max(elapsedSec, 1);
     const minutes = sec / 60;
 
-    const accuracy = typedChars === 0 ? 100 : (correctChars / typedChars) * 100;
-    const wpm = (correctChars / 5) / minutes;
+    const correctKeystrokes = Math.max(totalKeystrokes - errors, 0);
+    const accuracy = totalKeystrokes === 0 ? 100 : (correctKeystrokes / totalKeystrokes) * 100;
+
+    const cpm = progress / minutes;
+    const wpm = (progress / 5) / minutes;
 
     tAcc.innerText = accuracy.toFixed(1);
     tWpm.innerText = wpm.toFixed(1);
     tErr.innerText = errors;
 
-    return { sec, accuracy, wpm, cpm: (correctChars / minutes) };
+    return {
+      sec,
+      accuracy,
+      wpm,
+      cpm,
+      correctKeystrokes
+    };
   }
 
   function startTest() {
@@ -544,21 +610,33 @@
     input.focus();
     moveCursorToEnd();
 
+    progress = 0;
+    totalKeystrokes = 0;
+    errors = 0;
+
+    tWpm.innerText = "0";
+    tAcc.innerText = "100";
+    tErr.innerText = "0";
+    resultBox.style.display = "none";
+    resultBox.innerHTML = "";
+
     startTime = Date.now();
     tLeft.innerText = String(durationSec);
 
     timerId = setInterval(() => {
       const elapsed = Math.floor((Date.now() - startTime) / 1000);
       const left = Math.max(durationSec - elapsed, 0);
-      tLeft.innerText = String(left);
 
+      tLeft.innerText = String(left);
       recalcMetrics(elapsed);
+
       if (left <= 0) finish();
     }, 250);
   }
 
   async function finish() {
     if (!started) return;
+
     started = false;
     clearInterval(timerId);
 
@@ -584,8 +662,8 @@
 
     const payload = {
       duration_sec: durationSec,
-      typed_chars: typedChars,
-      correct_chars: correctChars,
+      typed_chars: totalKeystrokes,
+      correct_chars: m.correctKeystrokes,
       errors: errors,
       accuracy: m.accuracy,
       cpm: m.cpm,
@@ -604,6 +682,7 @@
 
       const data = await resp.json();
       const el = document.getElementById("saveState");
+
       el.innerHTML = data.ok
         ? "<span style='color:#27d36b; font-weight:900;'>Збережено ✅</span>"
         : "<span style='color:#ff6b6b; font-weight:900;'>Помилка збереження</span>";
@@ -616,35 +695,51 @@
   input.addEventListener("input", () => {
     if (!started) return;
 
-    const value = input.value;
+    let raw = input.value;
     moveCursorToEnd();
 
-    const pos = value.length;
-    typedChars = pos;
-    if (pos === 0) return;
-
-    const expected = targetText[pos - 1];
-    const typed = value[pos - 1];
-
-    if (typed !== expected) {
-      errors += 1;
-      input.value = value.slice(0, -1);
-      typedChars = input.value.length;
-      moveCursorToEnd();
+    if (raw.length <= progress) {
+      input.value = raw.slice(0, progress);
       return;
-    } else {
-      correctChars = pos;
+    }
+
+    const typedChar = raw[raw.length - 1];
+    const expectedChar = targetText[progress] || "";
+
+    totalKeystrokes += 1;
+
+    if (typedChar !== expectedChar) {
+      errors += 1;
+
+      input.value = raw.slice(0, progress);
+      moveCursorToEnd();
+
+      const elapsed = Math.min(Math.floor((Date.now() - startTime) / 1000), durationSec);
+      recalcMetrics(elapsed);
+      return;
+    }
+
+    progress += 1;
+    input.value = raw.slice(0, progress);
+    moveCursorToEnd();
+
+    const elapsed = Math.min(Math.floor((Date.now() - startTime) / 1000), durationSec);
+    recalcMetrics(elapsed);
+
+    if (progress >= targetText.length) {
+      finish();
     }
   });
 
   function resetAll() {
     clearInterval(timerId);
+
     started = false;
     startTime = 0;
     timerId = null;
 
-    typedChars = 0;
-    correctChars = 0;
+    progress = 0;
+    totalKeystrokes = 0;
     errors = 0;
 
     input.value = "";
