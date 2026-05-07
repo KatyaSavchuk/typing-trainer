@@ -16,17 +16,34 @@
   const fireworksLeft = document.getElementById("fireworksLeft");
   const fireworksRight = document.getElementById("fireworksRight");
 
+  const difficultyButtons = document.querySelectorAll(".diff-btn");
+
   if (
-    !playerShip || !raceInput || !startBtn || !restartBtn ||
-    !finishLine || !raceScene
-  ) return;
+    !playerShip ||
+    !botShip1 ||
+    !botShip2 ||
+    !botShip3 ||
+    !raceInput ||
+    !raceTextEl ||
+    !startBtn ||
+    !restartBtn ||
+    !progressValue ||
+    !raceStatus ||
+    !finishLine ||
+    !raceScene
+  ) {
+    return;
+  }
 
   const texts = [
-    "Космічні ракети летять до фінішу крізь зоряний простір",
-    "Швидкий друк допомагає перемогти у космічній гонці",
-    "Ракета гравця рухається вперед за кожен правильний символ",
-    "Уважний набір тексту веде до перемоги над суперниками",
-    "Кожна правильна літера наближає тебе до фінішу"
+    "Космічні ракети летять до фінішу через темний зоряний простір і поступово набирають швидкість",
+    "Гравець уважно вводить кожен символ щоб його ракета рухалась вперед без зайвих помилок",
+    "Швидкий і точний набір тексту допомагає обігнати суперників у космічній гонці",
+    "Кожна правильно введена літера наближає корабель до фінішу і збільшує шанс на перемогу",
+    "У цій грі важливо друкувати рівно уважно і не поспішати більше ніж потрібно",
+    "Ракети суперників постійно рухаються вперед тому гравцю потрібно швидко набирати текст",
+    "Космічна траса довга але уважний набір допомагає дістатися фінішу раніше за інших",
+    "Перемога у гонці залежить від швидкості реакції точності друку та вміння не робити помилок"
   ];
 
   let currentText = "";
@@ -34,17 +51,87 @@
   let finished = false;
 
   let currentIndex = 0;
-  let playerProgress = 0;
-
-  let bot1 = 0;
-  let bot2 = 0;
-  let bot3 = 0;
-
-  let botInterval = null;
   let finishX = 0;
 
-  function setShipX(ship, value) {
-    ship.style.left = `${16 + value}px`;
+  let animationFrameId = null;
+  let lastFrameTs = null;
+
+  let playerFinished = false;
+  let playerPlace = null;
+  let finishPlaceCounter = 0;
+
+  const ships = {
+    player: {
+      el: playerShip,
+      currentX: 0,
+      targetX: 0,
+      finished: false,
+      place: null,
+      smoothness: 4
+    },
+    bot1: {
+      el: botShip1,
+      currentX: 0,
+      targetX: 0,
+      finished: false,
+      place: null,
+      speedPx: 28,
+      smoothness: 7
+    },
+    bot2: {
+      el: botShip2,
+      currentX: 0,
+      targetX: 0,
+      finished: false,
+      place: null,
+      speedPx: 31,
+      smoothness: 7
+    },
+    bot3: {
+      el: botShip3,
+      currentX: 0,
+      targetX: 0,
+      finished: false,
+      place: null,
+      speedPx: 26,
+      smoothness: 7
+    }
+  };
+
+  const DIFFICULTY_SPEEDS = {
+    easy: {
+      bot1: 28,
+      bot2: 31,
+      bot3: 26
+    },
+    normal: {
+      bot1: 38,
+      bot2: 42,
+      bot3: 35
+    },
+    hard: {
+      bot1: 50,
+      bot2: 56,
+      bot3: 47
+    }
+  };
+
+  let difficulty = "easy";
+
+  function setShipVisual(ship) {
+    ship.el.style.transform = `translate3d(${ship.currentX}px, -50%, 0)`;
+  }
+
+  function setShipTarget(ship, value) {
+    ship.targetX = Math.max(0, Math.min(value, finishX));
+  }
+
+  function resetShip(ship) {
+    ship.currentX = 0;
+    ship.targetX = 0;
+    ship.finished = false;
+    ship.place = null;
+    setShipVisual(ship);
   }
 
   function getRandomText() {
@@ -57,8 +144,11 @@
     const sceneRect = raceScene.getBoundingClientRect();
     const shipWidth = playerShip.offsetWidth || 110;
 
-    finishX = (finishRect.left - sceneRect.left) - shipWidth + 8;
-    if (finishX < 0) finishX = 0;
+    finishX = finishRect.left - sceneRect.left - shipWidth + 8;
+
+    if (finishX < 0) {
+      finishX = 0;
+    }
   }
 
   function escapeHtml(text) {
@@ -81,6 +171,25 @@
       `<span>${escapeHtml(rest)}</span>`;
   }
 
+  function getPlaceText(place) {
+    if (place === 1) return "1 місці";
+    if (place === 2) return "2 місці";
+    if (place === 3) return "3 місці";
+    if (place === 4) return "останньому місці";
+    return `${place} місці`;
+  }
+
+  function setFinalPlayerStatus() {
+    if (playerPlace === 4) {
+      raceStatus.textContent = "Гравець прийшов на останньому місці";
+      return;
+    }
+
+    if (playerPlace) {
+      raceStatus.textContent = `Гравець прийшов на ${getPlaceText(playerPlace)}`;
+    }
+  }
+
   function launchFireworks() {
     if (!fireworksLeft || !fireworksRight) return;
 
@@ -88,6 +197,7 @@
     fireworksRight.style.display = "block";
 
     const containers = [fireworksLeft, fireworksRight];
+
     const colors = [
       "#ff4dff",
       "#00e5ff",
@@ -124,7 +234,9 @@
 
             container.appendChild(particle);
 
-            setTimeout(() => particle.remove(), 1200);
+            setTimeout(() => {
+              particle.remove();
+            }, 1200);
           }
         }, wave * 220 + index * 100);
       }
@@ -138,87 +250,164 @@
     }, 2600);
   }
 
+  function markFinished(shipName) {
+    const ship = ships[shipName];
+
+    if (ship.finished) return;
+
+    ship.finished = true;
+    ship.targetX = finishX;
+    ship.currentX = finishX;
+    setShipVisual(ship);
+
+    finishPlaceCounter += 1;
+    ship.place = finishPlaceCounter;
+
+    if (shipName === "player") {
+      playerFinished = true;
+      playerPlace = ship.place;
+
+      setFinalPlayerStatus();
+      raceInput.disabled = true;
+
+      if (playerPlace === 1) {
+        launchFireworks();
+      }
+    }
+
+    const allBotsFinished =
+      ships.bot1.finished &&
+      ships.bot2.finished &&
+      ships.bot3.finished;
+
+    if (allBotsFinished) {
+      finishRace();
+    }
+  }
+
+  function finishRace() {
+    finished = true;
+    started = false;
+    raceInput.disabled = true;
+
+    difficultyButtons.forEach((btn) => {
+      btn.disabled = false;
+    });
+
+    if (!playerFinished) {
+      playerFinished = true;
+      ships.player.finished = true;
+      playerPlace = 4;
+      ships.player.place = 4;
+    }
+
+    setFinalPlayerStatus();
+  }
+
+  function applyDifficulty() {
+    const speeds = DIFFICULTY_SPEEDS[difficulty] || DIFFICULTY_SPEEDS.easy;
+
+    ships.bot1.speedPx = speeds.bot1;
+    ships.bot2.speedPx = speeds.bot2;
+    ships.bot3.speedPx = speeds.bot3;
+  }
+
+  function animateShips(ts) {
+    if (lastFrameTs === null) {
+      lastFrameTs = ts;
+    }
+
+    const dt = Math.min(0.033, (ts - lastFrameTs) / 1000);
+    lastFrameTs = ts;
+
+    if (started && !finished) {
+      ["bot1", "bot2", "bot3"].forEach((name) => {
+        const ship = ships[name];
+
+        if (ship.finished) return;
+
+        const randomFactor = 0.94 + Math.random() * 0.12;
+        const nextTarget = ship.targetX + ship.speedPx * dt * randomFactor;
+
+        setShipTarget(ship, nextTarget);
+
+        if (ship.targetX >= finishX) {
+          markFinished(name);
+        }
+      });
+    }
+
+    Object.values(ships).forEach((ship) => {
+      const diff = ship.targetX - ship.currentX;
+
+      if (Math.abs(diff) < 0.1) {
+        ship.currentX = ship.targetX;
+      } else {
+        ship.currentX += diff * Math.min(1, ship.smoothness * dt);
+      }
+
+      setShipVisual(ship);
+    });
+
+    animationFrameId = requestAnimationFrame(animateShips);
+  }
+
   function resetRace() {
     started = false;
     finished = false;
-    currentIndex = 0;
-    playerProgress = 0;
-    bot1 = 0;
-    bot2 = 0;
-    bot3 = 0;
 
-    if (botInterval) {
-      clearInterval(botInterval);
-      botInterval = null;
-    }
+    currentIndex = 0;
+    lastFrameTs = null;
+
+    playerFinished = false;
+    playerPlace = null;
+    finishPlaceCounter = 0;
 
     currentText = getRandomText();
+
     raceInput.value = "";
     raceInput.disabled = true;
 
     calculateFinishX();
+    applyDifficulty();
 
-    setShipX(playerShip, playerProgress);
-    setShipX(botShip1, bot1);
-    setShipX(botShip2, bot2);
-    setShipX(botShip3, bot3);
+    resetShip(ships.player);
+    resetShip(ships.bot1);
+    resetShip(ships.bot2);
+    resetShip(ships.bot3);
 
     progressValue.textContent = "0%";
+
+    difficultyButtons.forEach((btn) => {
+      btn.disabled = false;
+    });
+
     raceStatus.textContent = "Очікує старту";
 
     renderText();
   }
 
-  function finishRace(message) {
-    finished = true;
-    started = false;
-
-    if (botInterval) {
-      clearInterval(botInterval);
-      botInterval = null;
-    }
-
-    raceInput.disabled = true;
-    raceStatus.textContent = message;
-
-    if (message.includes("Ти перемогла")) {
-      launchFireworks();
-    }
-  }
-
   function startRace() {
     if (started || finished) return;
 
+    calculateFinishX();
+    applyDifficulty();
+
     started = true;
+    finished = false;
+
+    difficultyButtons.forEach((btn) => {
+      btn.disabled = true;
+    });
+
     raceInput.disabled = false;
     raceInput.focus();
+
     raceStatus.textContent = "Гонка почалась";
-
-    const botSpeeds = {
-      bot1: 2.4,
-      bot2: 2.9,
-      bot3: 2.2
-    };
-
-    botInterval = setInterval(() => {
-      if (finished) return;
-
-      bot1 += botSpeeds.bot1 + Math.random() * 1.2;
-      bot2 += botSpeeds.bot2 + Math.random() * 1.0;
-      bot3 += botSpeeds.bot3 + Math.random() * 1.4;
-
-      setShipX(botShip1, bot1);
-      setShipX(botShip2, bot2);
-      setShipX(botShip3, bot3);
-
-      if (bot1 >= finishX) return finishRace("Бот 1 переміг");
-      if (bot2 >= finishX) return finishRace("Бот 2 переміг");
-      if (bot3 >= finishX) return finishRace("Бот 3 переміг");
-    }, 140);
   }
 
   raceInput.addEventListener("keydown", (e) => {
-    if (!started || finished) return;
+    if (!started || finished || playerFinished) return;
 
     if (
       e.key === "Backspace" ||
@@ -231,12 +420,13 @@
   });
 
   raceInput.addEventListener("input", () => {
-    if (!started || finished) return;
+    if (!started || finished || playerFinished) return;
 
-    const typed = raceInput.value;
+    let typed = raceInput.value;
 
     if (typed.length > currentIndex + 1) {
-      raceInput.value = typed.slice(0, currentIndex + 1);
+      typed = typed.slice(0, currentIndex + 1);
+      raceInput.value = typed;
     }
 
     const lastChar = raceInput.value[currentIndex];
@@ -251,15 +441,16 @@
       const progress = Math.min((currentIndex / currentText.length) * 100, 100);
       progressValue.textContent = `${Math.floor(progress)}%`;
 
-      playerProgress = (progress / 100) * finishX;
-      setShipX(playerShip, playerProgress);
+      const target = (progress / 100) * finishX;
+      setShipTarget(ships.player, target);
 
-      raceStatus.textContent = "Правильно";
       renderText();
 
       if (currentIndex === currentText.length) {
-        setShipX(playerShip, finishX);
-        finishRace("Ти переміг 🚀");
+        setShipTarget(ships.player, finishX);
+        markFinished("player");
+      } else {
+        raceStatus.textContent = "Текст набирається правильно";
       }
     } else {
       raceInput.value = raceInput.value.slice(0, currentIndex);
@@ -267,19 +458,55 @@
     }
   });
 
+  difficultyButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (started) return;
+
+      difficultyButtons.forEach((b) => {
+        b.classList.remove("active");
+      });
+
+      btn.classList.add("active");
+
+      difficulty = btn.dataset.diff || "easy";
+      applyDifficulty();
+      resetRace();
+    });
+  });
+
   window.addEventListener("resize", () => {
     calculateFinishX();
 
-    if (!finished) {
-      setShipX(playerShip, playerProgress);
-      setShipX(botShip1, bot1);
-      setShipX(botShip2, bot2);
-      setShipX(botShip3, bot3);
-    }
+    const progress = currentText.length
+      ? Math.min((currentIndex / currentText.length) * 100, 100)
+      : 0;
+
+    setShipTarget(ships.player, (progress / 100) * finishX);
+
+    ["bot1", "bot2", "bot3"].forEach((name) => {
+      const ship = ships[name];
+
+      if (ship.finished) {
+        ship.currentX = finishX;
+        ship.targetX = finishX;
+        setShipVisual(ship);
+      } else {
+        setShipTarget(ship, Math.min(ship.targetX, finishX));
+      }
+    });
   });
 
   startBtn.addEventListener("click", startRace);
-  restartBtn.addEventListener("click", resetRace);
+
+  restartBtn.addEventListener("click", () => {
+    resetRace();
+  });
 
   resetRace();
+
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId);
+  }
+
+  animationFrameId = requestAnimationFrame(animateShips);
 })();

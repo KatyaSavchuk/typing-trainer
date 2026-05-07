@@ -20,7 +20,25 @@
     return;
   }
 
-  // ===== WORDS from json_script =====
+  // ===== IMAGE =====
+  const asteroidImg = new Image();
+  let asteroidLoaded = false;
+
+  const asteroidSrc = canvas.dataset.asteroidSrc || "/static/img/asteroid.png";
+
+  asteroidImg.onload = () => {
+    asteroidLoaded = true;
+    console.log("ASTEROID IMAGE LOADED:", asteroidImg.src);
+  };
+
+  asteroidImg.onerror = () => {
+    asteroidLoaded = false;
+    console.error("ASTEROID IMAGE NOT FOUND:", asteroidImg.src);
+  };
+
+  asteroidImg.src = asteroidSrc + "?v=41";
+
+  // ===== WORDS from Django json_script =====
   let WORDS = ["space", "typing", "rocket"];
   const wordsNode = document.getElementById("space-words");
 
@@ -38,9 +56,24 @@
 
   // ===== difficulty =====
   const DIFFICULTY_PRESETS = {
-    easy: { spawnMs: 1500, speed: 55, lives: 5 },
-    normal: { spawnMs: 1100, speed: 75, lives: 3 },
-    hard: { spawnMs: 850, speed: 95, lives: 2 },
+    easy: {
+      spawnMs: 1500,
+      speed: 95,
+      lives: 5,
+      totalAsteroids: 12,
+    },
+    normal: {
+      spawnMs: 1150,
+      speed: 115,
+      lives: 3,
+      totalAsteroids: 17,
+    },
+    hard: {
+      spawnMs: 850,
+      speed: 135,
+      lives: 2,
+      totalAsteroids: 20,
+    },
   };
 
   const DIFF_LABELS = {
@@ -48,6 +81,8 @@
     normal: "нормально",
     hard: "важко",
   };
+
+  const MAX_ASTEROIDS_ON_SCREEN = 2;
 
   let difficulty = "easy";
 
@@ -64,7 +99,9 @@
   let maxLives = 5;
 
   let spawnIntervalMs = 1500;
-  let baseSpeed = 55;
+  let baseSpeed = 75;
+  let totalAsteroidsToSpawn = 12;
+  let spawnedAsteroids = 0;
 
   let asteroids = [];
   let explosions = [];
@@ -87,11 +124,13 @@
     bg.style.left = "0";
     bg.style.top = "0";
     bg.style.display = "block";
+    bg.style.zIndex = "0";
 
     canvas.style.position = "absolute";
     canvas.style.left = "0";
     canvas.style.top = "0";
     canvas.style.display = "block";
+    canvas.style.zIndex = "1";
   }
 
   function unlockGamePanelSize() {
@@ -121,7 +160,7 @@
     canvas.style.height = H + "px";
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    buildStars();
+    drawBlackBackground();
   }
 
   const ro = new ResizeObserver(() => {
@@ -139,6 +178,10 @@
     },
     { passive: true }
   );
+
+  function drawBlackBackground() {
+    bgCtx.clearRect(0, 0, W, H);
+  }
 
   // ===== HUD =====
   function renderLives() {
@@ -196,42 +239,9 @@
     lives = p.lives;
     spawnIntervalMs = p.spawnMs;
     baseSpeed = p.speed;
+    totalAsteroidsToSpawn = p.totalAsteroids;
 
     updateHud();
-  }
-
-  // ===== stars background =====
-  let stars = [];
-
-  function buildStars() {
-    stars = [];
-
-    const count = Math.floor((W * H) / 9000);
-
-    for (let i = 0; i < count; i++) {
-      stars.push({
-        x: Math.random() * W,
-        y: Math.random() * H,
-        r: 0.6 + Math.random() * 1.6,
-        a: 0.3 + Math.random() * 0.7,
-      });
-    }
-
-    drawStars();
-  }
-
-  function drawStars() {
-    bgCtx.clearRect(0, 0, W, H);
-
-    bgCtx.fillStyle = "#05060b";
-    bgCtx.fillRect(0, 0, W, H);
-
-    for (const s of stars) {
-      bgCtx.fillStyle = `rgba(255,255,255,${s.a})`;
-      bgCtx.beginPath();
-      bgCtx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-      bgCtx.fill();
-    }
   }
 
   // ===== asteroids =====
@@ -239,54 +249,55 @@
     return WORDS[Math.floor(Math.random() * WORDS.length)];
   }
 
-  function createAsteroidShape() {
-    const bumps = 10;
-    const shape = [];
-
-    for (let i = 0; i <= bumps; i++) {
-      const angle = (i / bumps) * Math.PI * 2;
-      const offset = 0.92 + Math.sin(angle * 3) * 0.05 + Math.random() * 0.03;
-
-      shape.push({
-        angle,
-        offset,
-      });
-    }
-
-    return shape;
+  function canSpawnMoreAsteroids() {
+    return spawnedAsteroids < totalAsteroidsToSpawn;
   }
 
   function spawnAsteroid() {
-    const text = randWord();
-    const r = 34 + Math.random() * 24;
+    if (!canSpawnMoreAsteroids()) {
+      stopSpawner();
+      return;
+    }
 
-    const minX = r;
-    const maxX = Math.max(r, W - r);
+    if (asteroids.length >= MAX_ASTEROIDS_ON_SCREEN) {
+      return;
+    }
+
+    const text = randWord();
+
+    const r = 46 + Math.random() * 26;
+
+    const minX = r + 10;
+    const maxX = Math.max(r + 10, W - r - 10);
     const x = minX + Math.random() * Math.max(1, maxX - minX);
 
-    // Важливо: метеорит завжди створюється вище видимої області
-    const y = -r - 20;
+    const y = -r - 30;
 
     asteroids.push({
       text,
       x,
       y,
       r,
-      vy: baseSpeed + Math.random() * 25,
+      vy: baseSpeed + Math.random() * 22,
       rot: Math.random() * Math.PI * 2,
-      vr: (-0.7 + Math.random() * 1.4) * 0.6,
-      shape: createAsteroidShape(),
+      vr: (-0.7 + Math.random() * 1.4) * 0.45,
     });
+
+    spawnedAsteroids += 1;
+
+    if (!canSpawnMoreAsteroids()) {
+      stopSpawner();
+    }
   }
 
   // ===== explosion particles =====
-  function boom(x, y) {
+  function boom(x, y, radius) {
     const parts = [];
-    const n = 26 + Math.floor(Math.random() * 18);
+    const n = 34 + Math.floor(Math.random() * 16);
 
     for (let i = 0; i < n; i++) {
       const ang = Math.random() * Math.PI * 2;
-      const sp = 60 + Math.random() * 180;
+      const sp = 80 + Math.random() * 210;
 
       parts.push({
         x,
@@ -295,72 +306,69 @@
         vy: Math.sin(ang) * sp,
         life: 0.35 + Math.random() * 0.35,
         age: 0,
-        r: 1.5 + Math.random() * 2.8,
+        r: 2 + Math.random() * 3.5,
       });
     }
 
-    explosions.push({ parts });
+    explosions.push({
+      x,
+      y,
+      radius,
+      age: 0,
+      life: 0.28,
+      parts,
+    });
   }
 
-  // ===== draw asteroid look =====
+  // ===== drawing =====
   function drawAsteroid(a) {
     ctx.save();
 
     ctx.translate(a.x, a.y);
     ctx.rotate(a.rot);
 
-    const grad = ctx.createRadialGradient(
-      -a.r * 0.2,
-      -a.r * 0.2,
-      a.r * 0.2,
-      0,
-      0,
-      a.r
-    );
+    const size = a.r * 2.75;
 
-    grad.addColorStop(0, "rgba(255,255,255,0.20)");
-    grad.addColorStop(0.35, "rgba(255,255,255,0.08)");
-    grad.addColorStop(1, "rgba(0,0,0,0.22)");
+    if (asteroidLoaded && asteroidImg.naturalWidth > 0) {
+      ctx.drawImage(
+        asteroidImg,
+        -size / 2,
+        -size / 2,
+        size,
+        size
+      );
+    } else {
+      ctx.fillStyle = "rgba(120,120,120,0.95)";
+      ctx.beginPath();
+      ctx.arc(0, 0, a.r, 0, Math.PI * 2);
+      ctx.fill();
 
-    ctx.fillStyle = grad;
-    ctx.strokeStyle = "rgba(255,255,255,0.10)";
-    ctx.lineWidth = 1;
-
-    ctx.beginPath();
-
-    for (let i = 0; i < a.shape.length; i++) {
-      const point = a.shape[i];
-
-      const rr = a.r * point.offset;
-      const px = Math.cos(point.angle) * rr;
-      const py = Math.sin(point.angle) * rr;
-
-      if (i === 0) {
-        ctx.moveTo(px, py);
-      } else {
-        ctx.lineTo(px, py);
-      }
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "800 12px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("IMG?", 0, 0);
     }
-
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
 
     ctx.rotate(-a.rot);
 
-    ctx.fillStyle = "rgba(255,255,255,0.95)";
-    ctx.font = "800 18px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    ctx.fillStyle = "rgba(255,255,255,0.98)";
+    ctx.strokeStyle = "rgba(0,0,0,0.75)";
+    ctx.lineWidth = 5;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
-    const maxW = a.r * 1.7;
-    let size = 18;
+    let fontSize = 20;
+    ctx.font = `900 ${fontSize}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
 
-    while (ctx.measureText(a.text).width > maxW && size > 12) {
-      size -= 1;
-      ctx.font = `800 ${size}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
+    const maxW = a.r * 1.75;
+
+    while (ctx.measureText(a.text).width > maxW && fontSize > 11) {
+      fontSize -= 1;
+      ctx.font = `900 ${fontSize}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
     }
 
+    ctx.strokeText(a.text, 0, 1);
     ctx.fillText(a.text, 0, 1);
 
     ctx.restore();
@@ -369,32 +377,47 @@
   function drawExplosions(dt) {
     for (let i = explosions.length - 1; i >= 0; i--) {
       const ex = explosions[i];
-      const parts = ex.parts;
 
-      for (let j = parts.length - 1; j >= 0; j--) {
-        const p = parts[j];
+      ex.age += dt;
+
+      const ringProgress = Math.min(1, ex.age / ex.life);
+      const ringAlpha = Math.max(0, 1 - ringProgress);
+
+      if (ringAlpha > 0) {
+        ctx.save();
+        ctx.strokeStyle = `rgba(255,255,255,${0.65 * ringAlpha})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(ex.x, ex.y, ex.radius * ringProgress, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      for (let j = ex.parts.length - 1; j >= 0; j--) {
+        const p = ex.parts[j];
 
         p.age += dt;
 
         if (p.age >= p.life) {
-          parts.splice(j, 1);
+          ex.parts.splice(j, 1);
           continue;
         }
 
         p.x += p.vx * dt;
         p.y += p.vy * dt;
-        p.vy += 260 * dt;
+
+        p.vy += 80 * dt;
 
         const k = 1 - p.age / p.life;
         const alpha = Math.max(0, k);
 
-        ctx.fillStyle = `rgba(255,255,255,${0.85 * alpha})`;
+        ctx.fillStyle = `rgba(255,255,255,${0.9 * alpha})`;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      if (parts.length === 0) {
+      if (ex.parts.length === 0 && ex.age >= ex.life) {
         explosions.splice(i, 1);
       }
     }
@@ -405,16 +428,19 @@
     ctx.clearRect(0, 0, W, H);
   }
 
-  function gameOver() {
-    running = false;
-    allowResize = true;
-
-    unlockGamePanelSize();
-
+  function stopSpawner() {
     if (spawnTimer) {
       clearInterval(spawnTimer);
       spawnTimer = null;
     }
+  }
+
+  function finishGame(message) {
+    running = false;
+    allowResize = true;
+
+    unlockGamePanelSize();
+    stopSpawner();
 
     if (animationFrameId) {
       cancelAnimationFrame(animationFrameId);
@@ -424,8 +450,18 @@
     input.blur();
 
     setTimeout(() => {
-      alert(`Гру завершено! Рахунок: ${score}`);
+      alert(message);
     }, 60);
+  }
+
+  function checkGameCompleted() {
+    const allAsteroidsSpawned = spawnedAsteroids >= totalAsteroidsToSpawn;
+    const noActiveAsteroids = asteroids.length === 0;
+    const noExplosions = explosions.length === 0;
+
+    if (running && allAsteroidsSpawned && noActiveAsteroids && noExplosions) {
+      finishGame(`Гру завершено! Рахунок: ${score} із ${totalAsteroidsToSpawn}`);
+    }
   }
 
   function tick(ts) {
@@ -457,18 +493,20 @@
       updateHud();
 
       if (lives <= 0) {
-        gameOver();
+        finishGame(`Гру завершено! Рахунок: ${score} із ${totalAsteroidsToSpawn}`);
         return;
       }
     }
+
+    checkGameCompleted();
+
+    if (!running) return;
 
     animationFrameId = requestAnimationFrame(tick);
   }
 
   function startSpawner() {
-    if (spawnTimer) {
-      clearInterval(spawnTimer);
-    }
+    stopSpawner();
 
     spawnTimer = setInterval(() => {
       if (running) {
@@ -488,7 +526,9 @@
     running = true;
     lastFrame = null;
 
-    input.focus();
+    input.focus({
+      preventScroll: true,
+    });
 
     if (asteroids.length === 0) {
       spawnAsteroid();
@@ -511,14 +551,12 @@
     resizeToPanel();
 
     score = 0;
+    spawnedAsteroids = 0;
     asteroids = [];
     explosions = [];
     lastFrame = null;
 
-    if (spawnTimer) {
-      clearInterval(spawnTimer);
-      spawnTimer = null;
-    }
+    stopSpawner();
 
     if (animationFrameId) {
       cancelAnimationFrame(animationFrameId);
@@ -529,6 +567,7 @@
 
     applyDifficulty();
     clearGame();
+    drawBlackBackground();
   }
 
   function onConfirmWord() {
@@ -541,7 +580,11 @@
     if (idx !== -1) {
       const a = asteroids[idx];
 
-      boom(a.x, a.y);
+      const boomX = a.x;
+      const boomY = a.y;
+
+      boom(boomX, boomY, a.r * 1.5);
+
       asteroids.splice(idx, 1);
 
       score += 1;

@@ -13,13 +13,61 @@ from trainer.models import TrainingText, TrainingResult
 from .models import TestTopic, TestText
 
 UA_WORDS = [
-    "космос", "ракета", "планета", "галактика", "астероід", "орбіта",
+    "космос", "ракета", "планета", "галактика", "астероїд", "орбіта",
     "метеор", "комета", "зірка", "швидкість", "пілот", "сигнал",
+    "місяць", "сонце", "земля", "марс", "венера", "сатурн",
+    "юпітер", "нептун", "уран", "всесвіт", "простір", "небо",
+    "політ", "запуск", "двигун", "паливо", "корабель", "капсула",
+    "шатл", "станція", "модуль", "екіпаж", "скафандр", "шолом",
+    "радар", "сенсор", "лазер", "промінь", "телескоп", "місія",
+    "подорож", "посадка", "гравітація", "кисень", "супутник", "робот",
+    "дрон", "портал", "щит", "енергія", "потужність", "система",
+    "команда", "ціль", "небезпека", "туманність", "затемнення", "горизонт",
+    "кратер", "камінь", "пил", "вибух", "іскра", "полумя",
+    "вогонь", "слід", "буря", "хвиля", "імпульс", "ядро",
+    "метал", "лід", "тінь", "сяйво", "темрява", "світло",
+    "швидкий", "повільний", "сміливий", "розумний", "чіткий", "гострий",
+    "старт", "фініш", "перемога", "поразка", "рівень", "рахунок",
+    "увага", "реакція", "точність", "помилка", "тренування", "клавіатура",
+    "літера", "символ", "слово", "гравець", "гра", "бонус",
+    "результат", "рекорд", "навичка", "завдання", "виклик", "практика",
+    "шлях", "маршрут", "курс", "вектор", "вісь", "кут",
+    "відстань", "поверхня", "атмосфера", "тиск", "температура", "радіація",
+    "магніт", "компас", "навігація", "компютер", "екран", "монітор",
+    "мережа", "зв’язок", "повідомлення", "попередження", "тривога", "батарея",
+    "резерв", "ремонт", "пошкодження", "частота", "канал", "передача",
+    "приймач", "сектор", "база", "колонія", "лабораторія", "ангар",
+    "вантаж", "місток", "вікно", "камера", "інженер", "капітан",
+    "штурман", "науковець", "дослід", "експедиція", "траєкторія", "орієнтир"
 ]
 
 EN_WORDS = [
     "space", "rocket", "planet", "galaxy", "asteroid", "orbit",
     "meteor", "comet", "star", "speed", "pilot", "signal",
+    "moon", "sun", "earth", "mars", "venus", "saturn",
+    "jupiter", "neptune", "uranus", "cosmos", "universe", "sky",
+    "flight", "launch", "engine", "fuel", "ship", "capsule",
+    "shuttle", "station", "module", "crew", "suit", "helmet",
+    "radar", "sensor", "laser", "beam", "telescope", "mission",
+    "journey", "travel", "landing", "gravity", "oxygen", "satellite",
+    "robot", "drone", "portal", "shield", "energy", "power",
+    "system", "command", "target", "danger", "nebula", "eclipse",
+    "horizon", "crater", "stone", "dust", "blast", "spark",
+    "flame", "fire", "trail", "storm", "wave", "pulse",
+    "core", "metal", "ice", "shadow", "glow", "dark",
+    "light", "fast", "slow", "brave", "smart", "clear",
+    "sharp", "start", "finish", "victory", "defeat", "level",
+    "score", "focus", "reaction", "accuracy", "mistake", "training",
+    "keyboard", "letter", "symbol", "word", "player", "game",
+    "bonus", "result", "record", "skill", "task", "challenge",
+    "practice", "path", "route", "course", "vector", "axis",
+    "angle", "distance", "surface", "atmosphere", "pressure", "temperature",
+    "radiation", "magnet", "compass", "navigation", "computer", "display",
+    "monitor", "network", "connection", "message", "warning", "alert",
+    "battery", "backup", "repair", "damage", "frequency", "channel",
+    "transmit", "receiver", "sector", "base", "colony", "laboratory",
+    "hangar", "cargo", "bridge", "window", "camera", "engineer",
+    "captain", "navigator", "scientist", "explore", "expedition", "trajectory"
 ]
 
 

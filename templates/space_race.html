@@ -39,6 +39,12 @@
       </div>
     </div>
 
+    <div class="race-difficulty">
+      <button class="diff-btn active" data-diff="easy" type="button">Легко</button>
+      <button class="diff-btn" data-diff="normal" type="button">Нормально</button>
+      <button class="diff-btn" data-diff="hard" type="button">Важко</button>
+    </div>
+
     <div class="race-panel">
       <div class="race-text" id="raceText">{{ race_text }}</div>
 
@@ -129,8 +135,9 @@
     position: absolute;
     left: 16px;
     top: 50%;
-    transform: translateY(-50%);
-    transition: left 0.12s linear;
+    transform: translate3d(0, -50%, 0);
+    transition: none;
+    will-change: transform;
   }
 
   .ship img {
@@ -154,6 +161,33 @@
       #000 16px 32px
     );
     box-shadow: 0 0 14px rgba(255,255,255,0.75);
+  }
+
+  .race-difficulty {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .diff-btn {
+    border: 0;
+    border-radius: 12px;
+    padding: 12px 18px;
+    font-weight: 900;
+    cursor: pointer;
+    background: rgba(255,255,255,0.92);
+    color: #0a0a12;
+  }
+
+  .diff-btn.active {
+    background: #27d36b;
+    color: #08150d;
+  }
+
+  .diff-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
   }
 
   .race-panel {
@@ -250,6 +284,7 @@
       transform: translate(0, 0) scale(0.4);
       opacity: 1;
     }
+
     100% {
       transform: translate(var(--tx), var(--ty)) scale(1.4);
       opacity: 0;
@@ -275,5 +310,5 @@
   }
 </style>
 
-<script src="{% static 'js/space_race.js' %}"></script>
+<script src="{% static 'js/space_race.js' %}?v=2"></script>
 {% endblock %}
