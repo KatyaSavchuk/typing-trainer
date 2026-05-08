@@ -35,17 +35,6 @@
     return;
   }
 
-  const texts = [
-    "Космічні ракети летять до фінішу через темний зоряний простір і поступово набирають швидкість",
-    "Гравець уважно вводить кожен символ щоб його ракета рухалась вперед без зайвих помилок",
-    "Швидкий і точний набір тексту допомагає обігнати суперників у космічній гонці",
-    "Кожна правильно введена літера наближає корабель до фінішу і збільшує шанс на перемогу",
-    "У цій грі важливо друкувати рівно уважно і не поспішати більше ніж потрібно",
-    "Ракети суперників постійно рухаються вперед тому гравцю потрібно швидко набирати текст",
-    "Космічна траса довга але уважний набір допомагає дістатися фінішу раніше за інших",
-    "Перемога у гонці залежить від швидкості реакції точності друку та вміння не робити помилок"
-  ];
-
   let currentText = "";
   let started = false;
   let finished = false;
@@ -118,6 +107,24 @@
 
   let difficulty = "easy";
 
+  function getTextFromPage() {
+    const dataNode = document.getElementById("race-text-data");
+
+    if (dataNode) {
+      try {
+        const parsed = JSON.parse(dataNode.textContent);
+
+        if (typeof parsed === "string" && parsed.trim()) {
+          return parsed.trim();
+        }
+      } catch (e) {
+        console.warn("Failed to parse race text JSON:", e);
+      }
+    }
+
+    return raceTextEl.textContent.trim();
+  }
+
   function setShipVisual(ship) {
     ship.el.style.transform = `translate3d(${ship.currentX}px, -50%, 0)`;
   }
@@ -132,11 +139,6 @@
     ship.finished = false;
     ship.place = null;
     setShipVisual(ship);
-  }
-
-  function getRandomText() {
-    const randomIndex = Math.floor(Math.random() * texts.length);
-    return texts[randomIndex];
   }
 
   function calculateFinishX() {
@@ -363,7 +365,7 @@
     playerPlace = null;
     finishPlaceCounter = 0;
 
-    currentText = getRandomText();
+    currentText = getTextFromPage();
 
     raceInput.value = "";
     raceInput.disabled = true;

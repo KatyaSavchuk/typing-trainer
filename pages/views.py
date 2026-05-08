@@ -6,11 +6,9 @@ from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 from django.db.models import Avg, Max
 
-# ✅ модели тренажёра из app "trainer"
 from trainer.models import TrainingText, TrainingResult
-
-# ✅ тесты — модели pages
 from .models import TestTopic, TestText
+
 
 UA_WORDS = [
     "космос", "ракета", "планета", "галактика", "астероїд", "орбіта",
@@ -33,8 +31,8 @@ UA_WORDS = [
     "результат", "рекорд", "навичка", "завдання", "виклик", "практика",
     "шлях", "маршрут", "курс", "вектор", "вісь", "кут",
     "відстань", "поверхня", "атмосфера", "тиск", "температура", "радіація",
-    "магніт", "компас", "навігація", "компютер", "екран", "монітор",
-    "мережа", "зв’язок", "повідомлення", "попередження", "тривога", "батарея",
+    "магніт", "компас", "навігація", "екран", "монітор",
+    "мережа", "повідомлення", "попередження", "тривога", "батарея",
     "резерв", "ремонт", "пошкодження", "частота", "канал", "передача",
     "приймач", "сектор", "база", "колонія", "лабораторія", "ангар",
     "вантаж", "місток", "вікно", "камера", "інженер", "капітан",
@@ -71,8 +69,44 @@ EN_WORDS = [
 ]
 
 
+UA_RACE_TEXTS = [
+    "Швидкий і точний набір тексту допомагає обігнати суперників у космічній гонці та першим дістатися фінішу",
+    "Космічні ракети летять до фінішу через темний зоряний простір а гравець має уважно вводити кожен символ",
+    "Гравець уважно вводить текст без помилок щоб його ракета впевнено рухалась вперед і не втрачала швидкість",
+    "Кожна правильно введена літера наближає корабель до перемоги та допомагає залишити суперників позаду",
+    "У цій грі важливо друкувати рівно уважно і без помилок бо ракети суперників постійно рухаються вперед",
+    "Ракети суперників не зупиняються тому гравцю потрібно швидко набирати текст і стежити за точністю кожного символу",
+    "Космічна траса довга але точний і спокійний набір допомагає дістатися фінішу раніше за інших учасників",
+    "Перемога у гонці залежить від швидкості реакції уважності гравця та вміння не робити зайвих помилок під час друку",
+    "Щоб перемогти у космічній гонці потрібно вводити текст послідовно швидко і точно не відволікаючись від завдання",
+    "Ракета гравця рухається вперед після кожної правильно введеної літери тому уважність напряму впливає на результат"
+]
+
+EN_RACE_TEXTS = [
+    "Fast and accurate typing helps you overtake opponents in the space race and reach the finish line first",
+    "Space rockets fly to the finish line through the dark starry sky while the player types every symbol carefully",
+    "The player types the text without mistakes so the rocket can move forward confidently and keep its speed",
+    "Every correctly typed letter brings the ship closer to victory and helps leave the opponents behind",
+    "In this game it is important to type smoothly carefully and without mistakes because opponent rockets keep moving forward",
+    "Opponent rockets do not stop so the player needs to type quickly and watch the accuracy of every symbol",
+    "The space track is long but calm and accurate typing helps you reach the finish earlier than other racers",
+    "Victory in the race depends on reaction speed player attention and the ability to avoid unnecessary typing mistakes",
+    "To win the space race you need to type the text consistently quickly and accurately without losing focus",
+    "The player rocket moves forward after every correctly typed letter so attention directly affects the final result"
+]
+
+
+def get_learning_language(request):
+    if request.user.is_authenticated and hasattr(request.user, "profile"):
+        lang = getattr(request.user.profile, "learning_language", None)
+        if lang in ("uk", "en"):
+            return lang
+
+    return request.session.get("learning_language", "uk")
+
+
 def space_typing(request):
-    lang = request.session.get("learning_language", "uk")  # "uk" или "en"
+    lang = get_learning_language(request)
 
     words = EN_WORDS if lang == "en" else UA_WORDS
 
@@ -80,15 +114,6 @@ def space_typing(request):
         "words": words,
         "lang": lang,
     })
-
-
-# ---------- helper ----------
-def get_learning_language(request):
-    if request.user.is_authenticated and hasattr(request.user, "profile"):
-        lang = getattr(request.user.profile, "learning_language", None)
-        if lang in ("uk", "en"):
-            return lang
-    return request.session.get("learning_language", "uk")
 
 
 def build_mode_stats(qs):
@@ -115,7 +140,6 @@ def build_mode_stats(qs):
     }
 
 
-# ---------- pages ----------
 def games(request):
     return render(request, "games.html")
 
@@ -163,13 +187,18 @@ def testing(request, topic_slug=None, text_id=None):
         selected_topic = get_object_or_404(
             TestTopic, slug=topic_slug, active=True, language=lang
         )
+
         topic_texts = TestText.objects.filter(
-            topic=selected_topic, active=True
+            topic=selected_topic,
+            active=True
         ).order_by("title")
 
         if text_id:
             selected_text = get_object_or_404(
-                TestText, id=text_id, topic=selected_topic, active=True
+                TestText,
+                id=text_id,
+                topic=selected_topic,
+                active=True
             )
         else:
             selected_text = topic_texts.first()
@@ -206,6 +235,7 @@ def trainer_save(request):
         cpm=float(data.get("cpm", 0.0)),
         wpm=float(data.get("wpm", 0.0)),
     )
+
     return JsonResponse({"ok": True, "id": res.id})
 
 
@@ -225,16 +255,17 @@ def test_save(request):
         cpm=float(data.get("cpm", 0.0)),
         wpm=float(data.get("wpm", 0.0)),
     )
+
     return JsonResponse({"ok": True, "id": res.id})
 
 
 def space_race(request):
-    lang = request.session.get("learning_language", "uk")
+    lang = get_learning_language(request)
 
     if lang == "en":
-        race_text = "space rockets fly fast through the galaxy and reach the finish line"
+        race_text = random.choice(EN_RACE_TEXTS)
     else:
-        race_text = "космічні ракети швидко летять крізь галактику до фінішу"
+        race_text = random.choice(UA_RACE_TEXTS)
 
     return render(request, "space_race.html", {
         "race_text": race_text,
